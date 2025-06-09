@@ -16,7 +16,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('agenda');
-  const [appointments, setAppointments] = useLocalStorage('salon-appointments', []);
+  const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useLocalStorage('salon-clients', []);
   const [services, setServices] = useLocalStorage('salon-services', []);
 
@@ -41,19 +41,103 @@ const App = () => {
     }
   }, [services, setServices]);
 
-  const addAppointment = (appointmentData) => {
-    const newAppointment = {
-      id: Date.now(),
-      ...appointmentData,
-      status: 'agendado'
-    };
-    setAppointments([...appointments, newAppointment]);
-    toast({
-      title: "Agendamento criado!",
-      description: "O agendamento foi criado com sucesso.",
-    });
-  };
+  // VERSÃO DEBUG - substitua temporariamente a função addAppointment no App.jsx
 
+// VERSÃO DEBUG - substitua temporariamente a função addAppointment no App.jsx
+
+// VERSÃO DEBUG - substitua temporariamente a função addAppointment no App.jsx
+
+// VERSÃO DEBUG - substitua temporariamente a função addAppointment no App.jsx
+
+// VERSÃO DEBUG - substitua temporariamente a função addAppointment no App.jsx
+
+const addAppointment = async (appointmentData) => {
+  console.log('🚀 === INICIANDO SALVAMENTO ===');
+  console.log('📥 Dados recebidos:', appointmentData);
+  
+  const id = Date.now();
+  console.log('🔢 ID gerado:', id);
+
+  const newAppointment = {
+    id,
+    ...appointmentData,
+    status: 'pendente', // GARANTIR que seja pendente
+    createdAt: new Date().toISOString()
+  };
+  
+  console.log('📦 Objeto completo a ser salvo:', newAppointment);
+  console.log('🔑 Chave que será usada:', `agendamento:${id}`);
+
+  try {
+    console.log('📡 Enviando para Upstash...');
+    
+    const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(["SET", `agendamento:${id}`, JSON.stringify(newAppointment)]),
+    });
+
+    console.log('📊 Response status:', response.status);
+    console.log('📊 Response ok:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Erro na resposta:', errorText);
+      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+    }
+    
+    const responseData = await response.json();
+    console.log('✅ Resposta do servidor:', responseData);
+
+    // TESTE: Verificar se foi salvo imediatamente
+    console.log('🔍 Verificando se foi salvo...');
+    setTimeout(async () => {
+      try {
+        const verifyResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(["GET", `agendamento:${id}`]),
+        });
+        
+        if (verifyResponse.ok) {
+          const verifyData = await verifyResponse.json();
+          console.log('🔍 Verificação - dados encontrados:', verifyData);
+          
+          if (verifyData.result) {
+            const savedData = JSON.parse(verifyData.result);
+            console.log('✅ Agendamento foi salvo corretamente:', savedData);
+          } else {
+            console.log('❌ Agendamento não foi encontrado na verificação');
+          }
+        } else {
+          const errorText = await verifyResponse.text();
+          console.error('❌ Erro na verificação:', verifyResponse.status, errorText);
+        }
+      } catch (verifyError) {
+        console.error('❌ Erro na verificação:', verifyError);
+      }
+    }, 1000); // Verificar após 1 segundo
+
+    toast({
+      title: "Solicitação enviada!",
+      description: `Agendamento ${id} registrado e aguardando aprovação.`,
+    });
+
+  } catch (error) {
+    console.error('❌ Erro completo:', error);
+    toast({
+      title: "Erro!",
+      description: "Ocorreu um problema ao salvar seu agendamento.",
+      variant: "destructive"
+    });
+  }
+};
   const updateAppointment = (id, updatedData) => {
     setAppointments(appointments.map(apt => 
       apt.id === id ? { ...apt, ...updatedData } : apt

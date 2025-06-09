@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Scissors, Phone, Plus, Edit, Trash2 } from 'lucide-react';
@@ -11,7 +10,7 @@ const AgendaView = ({ appointments, setShowNewAppointment, setEditingAppointment
     if (dateParts.length !== 3) return 'Data inválida';
     const [year, month, day] = dateParts;
     const date = new Date(year, month - 1, day);
-     if (isNaN(date.getTime())) {
+    if (isNaN(date.getTime())) {
       return 'Data inválida';
     }
     return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
@@ -24,6 +23,7 @@ const AgendaView = ({ appointments, setShowNewAppointment, setEditingAppointment
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'pendente': return 'bg-yellow-500';
       case 'agendado': return 'bg-blue-500';
       case 'confirmado': return 'bg-green-500';
       case 'cancelado': return 'bg-red-500';
@@ -106,6 +106,7 @@ const AgendaView = ({ appointments, setShowNewAppointment, setEditingAppointment
                     onChange={(e) => updateAppointment(appointment.id, { status: e.target.value })}
                     className="bg-white bg-opacity-20 text-white rounded-lg px-3 py-1 text-sm border border-white border-opacity-30 appearance-none"
                   >
+                    <option value="pendente" className="text-gray-800">Pendente</option>
                     <option value="agendado" className="text-gray-800">Agendado</option>
                     <option value="confirmado" className="text-gray-800">Confirmado</option>
                     <option value="concluido" className="text-gray-800">Concluído</option>

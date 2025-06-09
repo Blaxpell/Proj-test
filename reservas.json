@@ -1,0 +1,11 @@
+{
+  "reservas": [
+    {
+      "nome": "Exemplo Cliente",
+      "telefone": "99999-9999",
+      "data": "2025-06-15",
+      "hora": "14:00",
+      "status": "confirmado"
+    }
+  ]
+}

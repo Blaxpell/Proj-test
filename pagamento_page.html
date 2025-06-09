@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento - Fabiane Vieira Makeup Hair</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .floating-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .payment-option {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-option:hover {
+            transform: scale(1.05);
+        }
+        
+        .payment-option.selected {
+            border: 2px solid #10b981;
+            background: rgba(16, 185, 129, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="glass-effect rounded-2xl p-8">
+            <div class="floating-animation">
+                <svg class="w-12 h-12 text-white mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </div>
+            <p class="text-white text-center mt-4">Carregando orçamento...</p>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="error-screen" class="min-h-screen flex items-center justify-center p-4" style="display:none;">
+        <div class="glass-effect rounded-2xl p-8 w-full max-w-md text-center">
+            <svg class="w-16 h-16 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <h2 class="text-2xl font-bold text-white mb-4">Orçamento não encontrado</h2>
+            <p class="text-white text-opacity-80 mb-6">O link pode estar incorreto ou o orçamento pode ter expirado.</p>
+            <button onclick="window.close()" class="btn-primary text-white px-6 py-3 rounded-lg">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Payment Screen -->
+    <div id="payment-screen" class="min-h-screen p-4" style="display:none;">
+        <!-- Header -->
+        <div class="glass-effect rounded-2xl p-6 mb-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-white">Fabiane Vieira Makeup Hair</h1>
+                <p class="text-white text-opacity-80 mt-2">Confirmação de Serviço</p>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto space-y-6">
+            <!-- Detalhes do Orçamento -->
+            <div class="glass-effect rounded-2xl p-6">
+                <h2 class="text-2xl font-semibold text-white mb-4">📋 Detalhes do Orçamento</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-3">Informações do Cliente</h3>
+                        <div class="space-y-2">
+                            <p class="text-white text-opacity-80"><strong>Nome:</strong> <span id="cliente-nome"></span></p>
+                            <p class="text-white text-opacity-80"><strong>Telefone:</strong> <span id="cliente-telefone"></span></p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-3">Agendamento</h3>
+                        <div class="space-y-2">
+                            <p class="text-white text-opacity-80"><strong>📅 Data:</strong> <span id="agendamento-data"></span></p>
+                            <p class="text-white text-opacity-80"><strong>⏰ Horário:</strong> <span id="agendamento-horario"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Serviços Contratados</h3>
+                    <div id="servicos-lista" class="space-y-2">
+                        <!-- Serviços serão carregados aqui -->
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-white border-opacity-20">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-semibold text-white">Total:</span>
+                            <span class="text-2xl font-bold text-green-300" id="total-valor">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="observacoes-container" class="mt-6" style="display:none;">
+                    <h3 class="text-lg font-semibold text-white mb-3">📝 Observações</h3>
+                    <p class="text-white text-opacity-80" id="observacoes-texto"></p>
+                </div>
+            </div>
+
+            <!-- Opções de Pagamento -->
+            <div class="glass-effect rounded-2xl p-6">
+                <h2 class="text-2xl font-semibold text-white mb-6">💳 Forma de Pagamento</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Mercado Pago -->
+                    <div class="payment-option glass-effect rounded-xl p-6 border border-white border-opacity-20" onclick="selecionarPagamento('mercadopago')">
+                        <div class="text-center">
+                            <div class="bg-blue-500 bg-opacity-30 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-white font-semibold mb-2">Pagamento Online</h3>
+                            <p class="text-white text-opacity-70 text-sm">Cartão, PIX, ou outros</p>
+                            <p class="text-green-300 text-xs mt-2">✓ Pagamento Seguro</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Dinheiro na Hora -->
+                    <div class="payment-option glass-effect rounded-xl p-6 border border-white border-opacity-20" onclick="selecionarPagamento('dinheiro')">
+                        <div class="text-center">
+                            <div class="bg-green-500 bg-opacity-30 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-white font-semibold mb-2">Dinheiro</h3>
+                            <p class="text-white text-opacity-70 text-sm">Pagamento no Local</p>
+                            <p class="text-green-300 text-xs mt-2">✓ Pague na Hora do Serviço</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mercado Pago Placeholder -->
+                <div id="mercadopago-container" class="mb-6" style="display:none;">
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-white font-semibold mb-4">Finalizar Pagamento Online</h3>
+                        <div class="text-center p-4">
+                            <p class="text-white text-opacity-70 mb-4">Integração com sistema de pagamento em desenvolvimento</p>
+                            <button onclick="simularPagamento()" class="btn-primary text-white px-6 py-3 rounded-lg">
+                                🧪 Simular Pagamento Online
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dinheiro Confirmation -->
+                <div id="dinheiro-container" class="mb-6" style="display:none;">
+                    <div class="glass-effect rounded-xl p-6">
+                        <h3 class="text-white font-semibold mb-4">💵 Pagamento em Dinheiro</h3>
+                        <div class="bg-green-500 bg-opacity-20 border border-green-500 border-opacity-50 rounded-lg p-4 mb-4">
+                            <p class="text-green-200 mb-2"><strong>✓ Agendamento Confirmado!</strong></p>
+                            <p class="text-white text-opacity-80">Você pagará em dinheiro no momento do atendimento.</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-green-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-white text-opacity-80">Leve o valor exato se possível</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-green-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-white text-opacity-80">Chegue 5 minutos antes do horário</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-green-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-white text-opacity-80">Em caso de imprevistos, avise com antecedência</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="confirmarPagamentoDinheiro()" class="w-full btn-success text-white font-semibold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity mt-6">
+                            ✓ Confirmar Agendamento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status do Pagamento -->
+                <div id="status-container" class="text-center" style="display:none;">
+                    <div class="bg-green-500 bg-opacity-20 border border-green-500 border-opacity-50 rounded-lg p-6">
+                        <svg class="w-16 h-16 text-green-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="text-2xl font-bold text-white mb-2">Agendamento Confirmado!</h3>
+                        <p class="text-white text-opacity-80">Seu agendamento foi confirmado com sucesso.</p>
+                        <p class="text-white text-opacity-60 mt-4">Você receberá uma confirmação em breve.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações de Contato -->
+            <div class="glass-effect rounded-2xl p-6">
+                <h2 class="text-xl font-semibold text-white mb-4">📞 Contato</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-white text-opacity-80 mb-2"><strong>WhatsApp:</strong></p>
+                        <a href="https://wa.me/5511999999999" class="text-green-300 hover:text-green-200" target="_blank">
+                            (11) 99999-9999
+                        </a>
+                    </div>
+                    <div>
+                        <p class="text-white text-opacity-80 mb-2"><strong>Instagram:</strong></p>
+                        <a href="https://instagram.com/fabianevieiramakeup" class="text-pink-300 hover:text-pink-200" target="_blank">
+                            @fabianevieiramakeup
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Upstash
+        const UPSTASH_URL = 'https://coherent-escargot-23835.upstash.io';
+        const UPSTASH_TOKEN = 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA';
+        
+        let orcamento = null;
+        let selectedPayment = null;
+        
+        // Inicializar página
+        async function inicializarPagina() {
+            try {
+                // Obter ID do orçamento da URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const orcamentoId = urlParams.get('orc');
+                
+                if (!orcamentoId) {
+                    mostrarErro();
+                    return;
+                }
+                
+                // Carregar orçamento do Upstash
+                const response = await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: UPSTASH_TOKEN,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(['GET', `orcamento:${orcamentoId}`]),
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.result) {
+                        orcamento = JSON.parse(data.result);
+                        exibirOrcamento();
+                    } else {
+                        mostrarErro();
+                    }
+                } else {
+                    mostrarErro();
+                }
+                
+            } catch (error) {
+                console.error('Erro ao carregar orçamento:', error);
+                mostrarErro();
+            }
+        }
+        
+        // Mostrar tela de erro
+        function mostrarErro() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('error-screen').style.display = 'flex';
+        }
+        
+        // Exibir orçamento na tela
+        function exibirOrcamento() {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('payment-screen').style.display = 'block';
+            
+            // Preencher dados do cliente
+            document.getElementById('cliente-nome').textContent = orcamento.cliente.nome;
+            document.getElementById('cliente-telefone').textContent = orcamento.cliente.telefone;
+            
+            // Preencher dados do agendamento
+            document.getElementById('agendamento-data').textContent = formatarData(orcamento.agendamento.data);
+            document.getElementById('agendamento-horario').textContent = orcamento.agendamento.horario;
+            
+            // Preencher serviços
+            const servicosContainer = document.getElementById('servicos-lista');
+            servicosContainer.innerHTML = orcamento.servicos.map(servico => `
+                <div class="flex justify-between items-center p-3 bg-white bg-opacity-10 rounded-lg">
+                    <span class="text-white">${servico.descricao}</span>
+                    <span class="text-white font-semibold">R$ ${servico.valor.toFixed(2).replace('.', ',')}</span>
+                </div>
+            `).join('');
+            
+            // Preencher total
+            document.getElementById('total-valor').textContent = `R$ ${orcamento.total.toFixed(2).replace('.', ',')}`;
+            
+            // Preencher observações se existir
+            if (orcamento.observacoes && orcamento.observacoes.trim()) {
+                document.getElementById('observacoes-container').style.display = 'block';
+                document.getElementById('observacoes-texto').textContent = orcamento.observacoes;
+            }
+        }
+        
+        // Selecionar forma de pagamento
+        function selecionarPagamento(tipo) {
+            // Remover seleção anterior
+            document.querySelectorAll('.payment-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Esconder containers
+            document.getElementById('mercadopago-container').style.display = 'none';
+            document.getElementById('dinheiro-container').style.display = 'none';
+            document.getElementById('status-container').style.display = 'none';
+            
+            // Selecionar novo
+            event.currentTarget.classList.add('selected');
+            selectedPayment = tipo;
+            
+            if (tipo === 'mercadopago') {
+                document.getElementById('mercadopago-container').style.display = 'block';
+            } else if (tipo === 'dinheiro') {
+                document.getElementById('dinheiro-container').style.display = 'block';
+            }
+        }
+        
+        // Simular pagamento online
+        function simularPagamento() {
+            mostrarSucesso();
+            registrarPagamento('mercadopago', 'pago');
+        }
+        
+        // Confirmar pagamento em dinheiro
+        async function confirmarPagamentoDinheiro() {
+            try {
+                // Registrar como pagamento pendente
+                await registrarPagamento('dinheiro', 'pendente');
+                
+                // Atualizar status do orçamento
+                orcamento.status = 'aceito';
+                
+                await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: UPSTASH_TOKEN,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(['SET', `orcamento:${orcamento.id}`, JSON.stringify(orcamento)]),
+                });
+                
+                mostrarSucesso();
+                
+            } catch (error) {
+                console.error('Erro ao confirmar:', error);
+                alert('Erro ao confirmar agendamento. Tente novamente.');
+            }
+        }
+        
+        // Registrar pagamento
+        async function registrarPagamento(metodo, status) {
+            const pagamento = {
+                id: Date.now(),
+                orcamentoId: orcamento.id,
+                cliente: orcamento.cliente,
+                valor: orcamento.total,
+                metodoPagamento: metodo,
+                status: status,
+                dataPagamento: status === 'pago' ? new Date().toISOString() : null,
+                agendamento: orcamento.agendamento,
+                servicos: orcamento.servicos
+            };
+            
+            await fetch(UPSTASH_URL, {
+                method: 'POST',
+                headers: {
+                    Authorization: UPSTASH_TOKEN,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(['SET', `pagamento:${pagamento.id}`, JSON.stringify(pagamento)]),
+            });
+        }
+        
+        // Mostrar sucesso
+        function mostrarSucesso() {
+            document.getElementById('status-container').style.display = 'block';
+            
+            // Esconder opções de pagamento
+            document.getElementById('mercadopago-container').style.display = 'none';
+            document.getElementById('dinheiro-container').style.display = 'none';
+            
+            // Scroll para o status
+            document.getElementById('status-container').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Formatar data
+        function formatarData(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            inicializarPagina();
+        });
+    </script>
+</body>
+</html>

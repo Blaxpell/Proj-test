@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
     clientPhone: appointment?.clientPhone || '',
     service: appointment?.service || '',
     date: appointment?.date || '',
-    startTime: appointment?.startTime || '',
+    time: appointment?.time || '', // MUDANÇA: usar 'time' em vez de 'startTime'
     endTime: appointment?.endTime || '',
     notes: appointment?.notes || ''
   });
@@ -18,8 +17,8 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
   const selectedService = services.find(s => s.name === formData.service);
 
   useEffect(() => {
-    if (selectedService && formData.startTime && selectedService.duration) {
-      const [hours, minutes] = formData.startTime.split(':').map(Number);
+    if (selectedService && formData.time && selectedService.duration) {
+      const [hours, minutes] = formData.time.split(':').map(Number);
       const startDate = new Date();
       startDate.setHours(hours, minutes, 0, 0);
       
@@ -28,19 +27,39 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
       const endHours = String(endDate.getHours()).padStart(2, '0');
       const endMinutes = String(endDate.getMinutes()).padStart(2, '0');
       setFormData(prev => ({ ...prev, endTime: `${endHours}:${endMinutes}` }));
-    } else if (!selectedService || !formData.startTime) {
+    } else if (!selectedService || !formData.time) {
        setFormData(prev => ({ ...prev, endTime: '' }));
     }
-  }, [formData.startTime, formData.service, services, selectedService]);
-
+  }, [formData.time, formData.service, services, selectedService]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Debug: verificar dados antes de enviar
+    console.log('📝 Dados do formulário:', formData);
+    
+    // Criar objeto padronizado
+    const appointmentData = {
+      clientName: formData.clientName,
+      clientPhone: formData.clientPhone,
+      service: formData.service,
+      date: formData.date,
+      time: formData.time,
+      endTime: formData.endTime,
+      notes: formData.notes,
+      servicePrice: selectedService?.price || 0,
+      serviceDuration: selectedService?.duration || 0,
+      status: 'pendente' // IMPORTANTE: garantir que sempre seja 'pendente'
+    };
+    
+    console.log('📤 Enviando agendamento:', appointmentData);
+    
     if (appointment) {
-      updateAppointment(appointment.id, formData);
+      updateAppointment(appointment.id, appointmentData);
     } else {
-      addAppointment(formData);
+      addAppointment(appointmentData);
     }
+    
     onSave();
   };
 
@@ -67,6 +86,7 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               required
             />
           </div>
+          
           <div>
             <label className="block text-white text-sm font-medium mb-2">Telefone</label>
             <input
@@ -78,6 +98,7 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               required
             />
           </div>
+          
           <div>
             <label className="block text-white text-sm font-medium mb-2">Serviço</label>
             <select
@@ -94,6 +115,7 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               ))}
             </select>
           </div>
+          
           <div>
             <label className="block text-white text-sm font-medium mb-2">Data</label>
             <input
@@ -104,13 +126,14 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               required
             />
           </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-white text-sm font-medium mb-2">Hora Início</label>
               <input
                 type="time"
-                value={formData.startTime}
-                onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                value={formData.time}
+                onChange={(e) => setFormData({...formData, time: e.target.value})}
                 className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30"
                 required
               />
@@ -127,6 +150,21 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               />
             </div>
           </div>
+          
+          {selectedService && (
+            <div className="bg-white/10 rounded-lg p-3">
+              <p className="text-white/80 text-sm">
+                <strong>Serviço:</strong> {selectedService.name}
+              </p>
+              <p className="text-white/80 text-sm">
+                <strong>Duração:</strong> {selectedService.duration} minutos
+              </p>
+              <p className="text-white/80 text-sm">
+                <strong>Preço:</strong> R$ {selectedService.price}
+              </p>
+            </div>
+          )}
+          
           <div>
             <label className="block text-white text-sm font-medium mb-2">Observações</label>
             <textarea
@@ -137,10 +175,11 @@ const AppointmentForm = ({ appointment, services, onSave, onCancel, addAppointme
               rows="3"
             />
           </div>
+          
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
               <Check className="w-4 h-4 mr-2" />
-              Salvar
+              {appointment ? 'Atualizar' : 'Solicitar Agendamento'}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1 border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-10">
               <X className="w-4 h-4 mr-2" />
