@@ -1,69 +1,219 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - Fabiane Vieira Makeup Hair</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Arial', sans-serif;
-        }
-        
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-        }
-        
-        .status-pendente {
-            background: rgba(255, 193, 7, 0.2);
-            border: 1px solid rgba(255, 193, 7, 0.5);
-        }
-        
-        .status-aprovado {
-            background: rgba(40, 167, 69, 0.2);
-            border: 1px solid rgba(40, 167, 69, 0.5);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
-        }
-        
-        .floating-animation {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .modal {
-            backdrop-filter: blur(10px);
-            background: rgba(0, 0, 0, 0.5);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel Administrativo - Fabiane Vieira Makeup Hair</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      font-family: 'Arial', sans-serif;
+    }
+
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-pendente {
+      background: rgba(255, 193, 7, 0.2);
+      border: 1px solid rgba(255, 193, 7, 0.5);
+    }
+
+    .status-aprovado {
+      background: rgba(40, 167, 69, 0.2);
+      border: 1px solid rgba(40, 167, 69, 0.5);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    }
+
+    .floating-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .modal {
+      backdrop-filter: blur(10px);
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Destaque para orçamentos com pagamento em dinheiro pendente */
+    .pagamento-dinheiro-pendente {
+      border: 3px solid #ef4444 !important;
+      position: relative;
+      overflow: visible;
+    }
+
+    /* Animação de borda piscando */
+    @keyframes border-blink-red {
+      0%, 100% {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7),
+                    0 0 20px rgba(239, 68, 68, 0.6),
+                    inset 0 0 20px rgba(239, 68, 68, 0.1);
+      }
+      50% {
+        border-color: #dc2626;
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0),
+                    0 0 30px rgba(239, 68, 68, 0.8),
+                    inset 0 0 30px rgba(239, 68, 68, 0.2);
+      }
+    }
+
+    .pagamento-dinheiro-pendente {
+      animation: border-blink-red 1.5s ease-in-out infinite;
+    }
+
+    /* Badge de alerta no canto */
+    .alerta-dinheiro {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #ef4444;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      animation: pulse-badge 1s ease-in-out infinite;
+      z-index: 10;
+    }
+
+    @keyframes pulse-badge {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    /* Banner de aviso interno */
+    .banner-pagamento-dinheiro {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      border: 1px solid #b91c1c;
+      animation: glow-red 2s ease-in-out infinite;
+    }
+
+    @keyframes glow-red {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+      }
+    }
+
+    /* Estilo para aba colaboradores */
+    .user-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .user-info {
+      color: white;
+    }
+
+    .user-info strong {
+      font-size: 18px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .user-info span {
+      opacity: 0.8;
+      font-size: 14px;
+    }
+
+    .user-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-edit-user {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+
+    .btn-edit-user:hover {
+      background: #0056b3;
+    }
+
+    .btn-delete-user {
+      background: #dc3545;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+
+    .btn-delete-user:hover {
+      background: #bb2d3b;
+    }
+
+    /* Badge de grupo profissional */
+    .badge-grupo {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-left: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    /* Cores específicas para cada grupo */
+    .badge-cabeleireiro { background: #ff6b6b; }
+    .badge-manicure { background: #f59e0b; }
+    .badge-maquiador { background: #8b5cf6; }
+    .badge-esteticista { background: #10b981; }
+    .badge-recepcao { background: #3b82f6; }
+    .badge-auxiliar { background: #6b7280; }
+  </style>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -90,7 +240,7 @@
                 <h2 class="text-3xl font-bold text-white">Painel Administrativo</h2>
                 <p class="text-white text-opacity-80 mt-2">Fabiane Vieira Makeup Hair</p>
             </div>
-            
+
             <div class="space-y-4">
                 <div>
                     <label class="block text-white text-sm font-medium mb-2">Usuário</label>
@@ -102,7 +252,7 @@
                         class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:border-opacity-50 focus:outline-none"
                     >
                 </div>
-                
+
                 <div>
                     <label class="block text-white text-sm font-medium mb-2">Senha</label>
                     <input 
@@ -113,7 +263,7 @@
                         onkeypress="if(event.key==='Enter') verificarLogin()"
                     >
                 </div>
-                
+
                 <button 
                     onclick="verificarLogin()" 
                     class="w-full btn-primary text-white font-semibold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity"
@@ -121,7 +271,7 @@
                 >
                     Entrar
                 </button>
-                
+
                 <div class="text-center text-white text-opacity-60 text-sm mt-4">
                     <p>Primeiro acesso? Use:</p>
                     <p><strong>Usuário:</strong> admin</p>
@@ -143,7 +293,7 @@
                 <h2 class="text-3xl font-bold text-white">Primeiro Acesso</h2>
                 <p class="text-white text-opacity-80 mt-2">Defina sua nova senha</p>
             </div>
-            
+
             <div class="space-y-4">
                 <div>
                     <label class="block text-white text-sm font-medium mb-2">Nova Senha</label>
@@ -154,7 +304,7 @@
                         class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:border-opacity-50 focus:outline-none"
                     >
                 </div>
-                
+
                 <div>
                     <label class="block text-white text-sm font-medium mb-2">Confirmar Senha</label>
                     <input 
@@ -165,7 +315,7 @@
                         onkeypress="if(event.key==='Enter') definirNovaSenha()"
                     >
                 </div>
-                
+
                 <button 
                     onclick="definirNovaSenha()" 
                     class="w-full btn-primary text-white font-semibold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity"
@@ -175,7 +325,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Admin Panel -->
     <div id="admin-panel" style="display:none;" class="min-h-screen p-4">
         <!-- Header -->
@@ -183,7 +333,10 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-3xl font-bold text-white">Painel Administrativo</h1>
-                    <p class="text-white text-opacity-80">Bem-vindo, <span id="user-name"></span></p>
+                    <p class="text-white text-opacity-80">
+                        Bem-vindo, <span id="user-name"></span>
+                        <span id="user-group-badge" class="badge-grupo"></span>
+                    </p>
                 </div>
                 <div class="flex space-x-3">
                     <button 
@@ -195,7 +348,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="glass-effect rounded-xl p-6 card-hover">
@@ -211,7 +364,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="glass-effect rounded-xl p-6 card-hover">
                 <div class="flex items-center">
                     <div class="bg-green-500 bg-opacity-30 p-3 rounded-full">
@@ -225,8 +378,8 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="glass-effect rounded-xl p-6 card-hover">
+
+            <div class="glass-effect rounded-xl p-6 card-hover" id="card-orcamentos" style="display:none;">
                 <div class="flex items-center">
                     <div class="bg-purple-500 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,8 +392,8 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="glass-effect rounded-xl p-6 card-hover">
+
+            <div class="glass-effect rounded-xl p-6 card-hover" id="card-pagamentos" style="display:none;">
                 <div class="flex items-center">
                     <div class="bg-blue-500 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,10 +407,19 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Tabs -->
         <div class="glass-effect rounded-2xl p-6">
             <div class="flex flex-wrap gap-2 mb-6">
+                <button
+                    onclick="showTab('colaboradores')"
+                    id="tab-colaboradores"
+                    class="px-6 py-3 rounded-lg font-semibold transition-all text-white text-opacity-70 hover:text-opacity-100"
+                    style="display: none;"
+                >
+                    👥 Colaboradores
+                </button>
+
                 <button 
                     onclick="showTab('pendentes')" 
                     id="tab-pendentes"
@@ -265,22 +427,79 @@
                 >
                     📋 Agendamentos
                 </button>
+
                 <button 
                     onclick="showTab('orcamentos')" 
                     id="tab-orcamentos"
                     class="px-6 py-3 rounded-lg font-semibold transition-all text-white text-opacity-70 hover:text-opacity-100"
+                    style="display: none;"
                 >
                     💰 Orçamentos
                 </button>
+
                 <button 
                     onclick="showTab('pagamentos')" 
                     id="tab-pagamentos"
                     class="px-6 py-3 rounded-lg font-semibold transition-all text-white text-opacity-70 hover:text-opacity-100"
+                    style="display: none;"
                 >
                     💳 Pagamentos
                 </button>
             </div>
-            
+
+            <!-- Aba Colaboradores -->
+            <div id="content-colaboradores" class="tab-content" style="display:none;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-white">Gerenciar Colaboradores</h3>
+                    <button 
+                        onclick="mostrarFormularioColaborador()" 
+                        class="btn-success text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all"
+                    >
+                        ➕ Novo Colaborador
+                    </button>
+                </div>
+
+                <!-- Formulário de cadastro/edição -->
+                <div id="form-colaborador" class="mb-6 glass-effect rounded-xl p-6" style="display:none;">
+                    <h4 class="text-lg font-semibold text-white mb-4" id="form-colab-title">Novo Colaborador</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-white text-sm mb-2">Nome Completo</label>
+                            <input type="text" id="colab-nome" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30" placeholder="Nome do colaborador" />
+                        </div>
+                        <div>
+                            <label class="block text-white text-sm mb-2">Usuário (Login)</label>
+                            <input type="text" id="colab-username" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30" placeholder="Nome de usuário" />
+                        </div>
+                        <div>
+                            <label class="block text-white text-sm mb-2">Senha</label>
+                            <input type="password" id="colab-password" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30" placeholder="Senha inicial" />
+                        </div>
+                        <div>
+                            <label class="block text-white text-sm mb-2">Grupo Profissional</label>
+                            <select id="colab-grupo" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30">
+                                <option value="cabeleireiro" class="bg-gray-800">Cabeleireiro(a)</option>
+                                <option value="manicure" class="bg-gray-800">Manicure</option>
+                                <option value="maquiador" class="bg-gray-800">Maquiador(a)</option>
+                                <option value="esteticista" class="bg-gray-800">Esteticista</option>
+                                <option value="recepcao" class="bg-gray-800">Recepção</option>
+                                <option value="auxiliar" class="bg-gray-800">Auxiliar</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="colab-edit-id" value="" />
+                        <div class="flex space-x-3 mt-6">
+                            <button type="button" onclick="salvarColaborador()" class="btn-success text-white px-6 py-3 rounded-lg flex-1">💾 Salvar</button>
+                            <button type="button" onclick="cancelarFormularioColaborador()" class="bg-gray-500 bg-opacity-30 text-white px-6 py-3 rounded-lg flex-1">❌ Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de colaboradores -->
+                <div id="lista-colaboradores" class="space-y-4">
+                    <!-- Lista carregada dinamicamente via JS -->
+                </div>
+            </div>
+
             <!-- Agendamentos -->
             <div id="content-pendentes" class="tab-content">
                 <div class="flex justify-between items-center mb-4">
@@ -321,7 +540,7 @@
                         💰 Novo Orçamento
                     </button>
                 </div>
-                
+
                 <!-- Formulário de Novo Orçamento -->
                 <div id="form-orcamento" class="mb-6 glass-effect rounded-xl p-6" style="display:none;">
                     <h4 class="text-lg font-semibold text-white mb-4">Criar Novo Orçamento</h4>
@@ -404,7 +623,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Configuração do Upstash
         const UPSTASH_URL = 'https://coherent-escargot-23835.upstash.io';
@@ -415,6 +634,31 @@
         let agendamentos = [];
         let orcamentos = [];
         let pagamentos = [];
+        let colaboradores = [];
+        
+        // Grupos profissionais disponíveis
+        const GRUPOS_PROFISSIONAIS = {
+            cabeleireiro: { nome: 'Cabeleireiro(a)', cor: 'badge-cabeleireiro' },
+            manicure: { nome: 'Manicure', cor: 'badge-manicure' },
+            maquiador: { nome: 'Maquiador(a)', cor: 'badge-maquiador' },
+            esteticista: { nome: 'Esteticista', cor: 'badge-esteticista' },
+            recepcao: { nome: 'Recepção', cor: 'badge-recepcao' },
+            auxiliar: { nome: 'Auxiliar', cor: 'badge-auxiliar' }
+        };
+        
+        // Sistema de permissões
+        const PERMISSOES = {
+            proprietario: {
+                tabs: ['colaboradores', 'pendentes', 'orcamentos', 'pagamentos'],
+                acoes: ['aprovar', 'recusar', 'criar_orcamento', 'gerenciar_colaboradores', 'ver_todos_dados'],
+                estatisticas: ['todas']
+            },
+            colaborador: {
+                tabs: ['pendentes'],
+                acoes: ['aprovar', 'recusar'],
+                estatisticas: ['proprias']
+            }
+        };
         
         // Inicialização do sistema
         async function inicializarSistema() {
@@ -465,6 +709,7 @@
                 username: 'admin',
                 name: 'Administrador',
                 role: 'proprietario',
+                grupo: null,
                 password: hashPassword('fabiane2025temp'),
                 firstLogin: true,
                 createdAt: new Date().toISOString(),
@@ -599,7 +844,37 @@
             
             document.getElementById('user-name').textContent = currentUser.name;
             
+            // Mostrar badge do grupo se for colaborador
+            if (currentUser.grupo && GRUPOS_PROFISSIONAIS[currentUser.grupo]) {
+                const badge = document.getElementById('user-group-badge');
+                badge.textContent = GRUPOS_PROFISSIONAIS[currentUser.grupo].nome;
+                badge.className = `badge-grupo ${GRUPOS_PROFISSIONAIS[currentUser.grupo].cor}`;
+                badge.style.display = 'inline-block';
+            }
+            
+            // Aplicar permissões
+            aplicarPermissoes();
+            
             carregarTodosDados();
+        }
+        
+        // Aplicar permissões baseadas no role do usuário
+        function aplicarPermissoes() {
+            const permissoes = PERMISSOES[currentUser.role] || PERMISSOES.colaborador;
+            
+            // Esconder/mostrar tabs baseado em permissões
+            document.getElementById('tab-colaboradores').style.display = 
+                permissoes.tabs.includes('colaboradores') ? 'block' : 'none';
+            document.getElementById('tab-orcamentos').style.display = 
+                permissoes.tabs.includes('orcamentos') ? 'block' : 'none';
+            document.getElementById('tab-pagamentos').style.display = 
+                permissoes.tabs.includes('pagamentos') ? 'block' : 'none';
+            
+            // Esconder/mostrar cards de estatísticas
+            document.getElementById('card-orcamentos').style.display = 
+                permissoes.tabs.includes('orcamentos') ? 'block' : 'none';
+            document.getElementById('card-pagamentos').style.display = 
+                permissoes.tabs.includes('pagamentos') ? 'block' : 'none';
         }
         
         // Logout
@@ -607,11 +882,248 @@
             currentUser = null;
             document.getElementById('admin-panel').style.display = 'none';
             document.getElementById('login-section').style.display = 'flex';
-            document.getElementById('admin-username').value = 'admin';
+            document.getElementById('admin-username').value = '';
             document.getElementById('admin-password').value = '';
-            document.getElementById('admin-password').focus();
+            document.getElementById('admin-username').focus();
         }
+
+        // === FUNÇÕES DE COLABORADORES ===
         
+        // Mostrar formulário para novo colaborador
+        function mostrarFormularioColaborador() {
+            document.getElementById('form-colaborador').style.display = 'block';
+            document.getElementById('form-colab-title').textContent = 'Novo Colaborador';
+            document.getElementById('colab-nome').value = '';
+            document.getElementById('colab-username').value = '';
+            document.getElementById('colab-password').value = '';
+            document.getElementById('colab-grupo').value = 'cabeleireiro';
+            document.getElementById('colab-edit-id').value = '';
+            document.getElementById('colab-nome').focus();
+        }
+
+        // Cancelar formulário colaborador
+        function cancelarFormularioColaborador() {
+            document.getElementById('form-colaborador').style.display = 'none';
+            document.getElementById('colab-nome').value = '';
+            document.getElementById('colab-username').value = '';
+            document.getElementById('colab-password').value = '';
+            document.getElementById('colab-grupo').value = 'cabeleireiro';
+            document.getElementById('colab-edit-id').value = '';
+        }
+
+        // Salvar colaborador
+        async function salvarColaborador() {
+            const nome = document.getElementById('colab-nome').value.trim();
+            const username = document.getElementById('colab-username').value.trim();
+            const password = document.getElementById('colab-password').value;
+            const grupo = document.getElementById('colab-grupo').value;
+            const editId = document.getElementById('colab-edit-id').value;
+
+            if (!nome || !username || (!password && !editId)) {
+                showNotification('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+
+            try {
+                // Verifica se já existe usuário com esse username (quando for novo)
+                if (!editId) {
+                    const res = await fetch(UPSTASH_URL, {
+                        method: 'POST',
+                        headers: { 
+                            Authorization: UPSTASH_TOKEN, 
+                            'Content-Type': 'application/json' 
+                        },
+                        body: JSON.stringify(['GET', `usuario:${username}`])
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.result) {
+                            showNotification('Já existe um usuário com este login', 'error');
+                            return;
+                        }
+                    }
+                }
+
+                const userObj = {
+                    id: editId || username,
+                    username: username,
+                    name: nome,
+                    role: 'colaborador',
+                    grupo: grupo,
+                    password: password ? hashPassword(password) : undefined,
+                    firstLogin: !editId,
+                    createdAt: new Date().toISOString(),
+                    active: true
+                };
+
+                // Remove password undefined se for edição sem mudança de senha
+                if (!password && editId) {
+                    delete userObj.password;
+                    // Busca o usuário existente para manter a senha atual
+                    const existingRes = await fetch(UPSTASH_URL, {
+                        method: 'POST',
+                        headers: { 
+                            Authorization: UPSTASH_TOKEN, 
+                            'Content-Type': 'application/json' 
+                        },
+                        body: JSON.stringify(['GET', `usuario:${username}`])
+                    });
+                    
+                    if (existingRes.ok) {
+                        const existingData = await existingRes.json();
+                        if (existingData.result) {
+                            const existingUser = JSON.parse(existingData.result);
+                            userObj.password = existingUser.password;
+                        }
+                    }
+                }
+
+                await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: { 
+                        Authorization: UPSTASH_TOKEN, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(['SET', `usuario:${username}`, JSON.stringify(userObj)])
+                });
+
+                showNotification('Colaborador salvo com sucesso!', 'success');
+                cancelarFormularioColaborador();
+                await carregarColaboradores();
+                
+            } catch (error) {
+                console.error('Erro ao salvar colaborador:', error);
+                showNotification('Erro ao salvar colaborador', 'error');
+            }
+        }
+
+        // Carregar colaboradores
+        async function carregarColaboradores() {
+            try {
+                const keysRes = await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: { 
+                        Authorization: UPSTASH_TOKEN, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(['KEYS', 'usuario:*'])
+                });
+
+                const listaDiv = document.getElementById('lista-colaboradores');
+                listaDiv.innerHTML = '';
+
+                if (!keysRes.ok) return;
+
+                const keysData = await keysRes.json();
+                colaboradores = [];
+
+                if (keysData.result && keysData.result.length > 0) {
+                    for (const key of keysData.result) {
+                        const res = await fetch(UPSTASH_URL, {
+                            method: 'POST',
+                            headers: { 
+                                Authorization: UPSTASH_TOKEN, 
+                                'Content-Type': 'application/json' 
+                            },
+                            body: JSON.stringify(['GET', key])
+                        });
+                        
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.result) {
+                                const user = JSON.parse(data.result);
+                                if (user.role === 'colaborador') {
+                                    colaboradores.push(user);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (colaboradores.length === 0) {
+                    listaDiv.innerHTML = `
+                        <div class="text-center py-8">
+                            <svg class="w-16 h-16 text-white text-opacity-50 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <p class="text-white text-opacity-70">Nenhum colaborador cadastrado</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                colaboradores.forEach(user => {
+                    const userCard = document.createElement('div');
+                    userCard.className = 'user-card';
+                    
+                    const grupoInfo = GRUPOS_PROFISSIONAIS[user.grupo] || { nome: 'Não definido', cor: '' };
+                    
+                    userCard.innerHTML = `
+                        <div class="user-info">
+                            <strong>${user.name}</strong>
+                            <span>@${user.username}</span>
+                            <span class="badge-grupo ${grupoInfo.cor}">${grupoInfo.nome}</span>
+                        </div>
+                        <div class="user-actions">
+                            <button class="btn-edit-user" onclick="editarColaborador('${user.username}')">
+                                ✏️ Editar
+                            </button>
+                            <button class="btn-delete-user" onclick="deletarColaborador('${user.username}')">
+                                🗑️ Excluir
+                            </button>
+                        </div>
+                    `;
+                    listaDiv.appendChild(userCard);
+                });
+
+            } catch (error) {
+                console.error('Erro ao carregar colaboradores:', error);
+                showNotification('Erro ao carregar colaboradores', 'error');
+            }
+        }
+
+        // Editar colaborador
+        function editarColaborador(username) {
+            const user = colaboradores.find(c => c.username === username);
+            if (!user) return;
+            
+            document.getElementById('form-colaborador').style.display = 'block';
+            document.getElementById('form-colab-title').textContent = 'Editar Colaborador';
+            document.getElementById('colab-nome').value = user.name;
+            document.getElementById('colab-username').value = user.username;
+            document.getElementById('colab-password').value = '';
+            document.getElementById('colab-password').placeholder = 'Deixe em branco para manter a senha atual';
+            document.getElementById('colab-grupo').value = user.grupo || 'cabeleireiro';
+            document.getElementById('colab-edit-id').value = user.id;
+        }
+
+        // Deletar colaborador
+        async function deletarColaborador(username) {
+            if (!confirm('Tem certeza que deseja excluir este colaborador?')) return;
+            
+            try {
+                const res = await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: { 
+                        Authorization: UPSTASH_TOKEN, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(['DEL', `usuario:${username}`])
+                });
+                
+                if (res.ok) {
+                    showNotification('Colaborador excluído com sucesso!', 'success');
+                    await carregarColaboradores();
+                } else {
+                    showNotification('Erro ao excluir colaborador', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir colaborador:', error);
+                showNotification('Erro ao excluir colaborador', 'error');
+            }
+        }
+
         // Carregar todos os dados
         async function carregarTodosDados() {
             await Promise.all([
@@ -620,8 +1132,9 @@
                 carregarPagamentos()
             ]);
             atualizarEstatisticas();
+            await atualizarIndicadorAbaOrcamentos();
         }
-        
+
         // Carregar agendamentos do Upstash
         async function carregarAgendamentos() {
             try {
@@ -633,11 +1146,11 @@
                     },
                     body: JSON.stringify(['KEYS', 'agendamento:*']),
                 });
-                
+
                 if (keysResponse.ok) {
                     const keysData = await keysResponse.json();
                     agendamentos = [];
-                    
+
                     if (keysData.result && keysData.result.length > 0) {
                         for (const key of keysData.result) {
                             try {
@@ -649,7 +1162,7 @@
                                     },
                                     body: JSON.stringify(['GET', key]),
                                 });
-                                
+
                                 if (getResponse.ok) {
                                     const getData = await getResponse.json();
                                     if (getData.result) {
@@ -663,26 +1176,52 @@
                         }
                     }
                 }
-                
+
                 renderizarAgendamentos();
-                
+
             } catch (error) {
                 console.error('Erro ao carregar agendamentos:', error);
                 showNotification('Erro ao carregar agendamentos', 'error');
             }
         }
-        
+
+        // Filtrar dados baseado em permissões
+        function filtrarDadosPorPermissao(dados, tipo) {
+            const permissoes = PERMISSOES[currentUser.role];
+            
+            // Se tem permissão para ver todos os dados, retorna tudo
+            if (permissoes.acoes.includes('ver_todos_dados')) {
+                return dados;
+            }
+            
+            // Se é colaborador, filtra apenas dados relacionados a ele
+            if (currentUser.role === 'colaborador') {
+                return dados.filter(item => {
+                    // Para agendamentos aprovados por ele
+                    if (item.approvedBy === currentUser.username) return true;
+                    // Para agendamentos do grupo dele
+                    if (item.grupo === currentUser.grupo) return true;
+                    // Para agendamentos sem atribuição (pendentes)
+                    if (!item.approvedBy && item.status === 'pendente') return true;
+                    return false;
+                });
+            }
+            
+            return dados;
+        }
+
         // Renderizar agendamentos
         function renderizarAgendamentos() {
-            renderizarPendentes();
-            renderizarAprovados();
+            const agendamentosFiltrados = filtrarDadosPorPermissao(agendamentos, 'agendamentos');
+            renderizarPendentes(agendamentosFiltrados);
+            renderizarAprovados(agendamentosFiltrados);
         }
-        
+
         // Renderizar solicitações pendentes
-        function renderizarPendentes() {
+        function renderizarPendentes(agendamentosFiltrados) {
             const container = document.getElementById('pending-requests');
-            const pendentes = agendamentos.filter(a => a.status === 'pendente');
-            
+            const pendentes = agendamentosFiltrados.filter(a => a.status === 'pendente');
+
             if (pendentes.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -694,7 +1233,7 @@
                 `;
                 return;
             }
-            
+
             container.innerHTML = pendentes.map(agendamento => `
                 <div class="status-pendente rounded-xl p-6 card-hover">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -707,6 +1246,14 @@
                             ${agendamento.notes ? `<p class="text-white text-opacity-80"><strong>📝 Obs:</strong> ${agendamento.notes}</p>` : ''}
                         </div>
                         <div class="flex flex-col justify-center space-y-3">
+                            ${currentUser.role === 'proprietario' ? `
+                                <button 
+                                    onclick="abrirModalOrcamentoDoAgendamento(${agendamento.id})" 
+                                    class="btn-primary text-white font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-all"
+                                >
+                                    💰 Gerar Orçamento
+                                </button>
+                            ` : ''}
                             <button 
                                 onclick="aprovarAgendamento(${agendamento.id})" 
                                 class="btn-success text-white font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-all"
@@ -724,12 +1271,12 @@
                 </div>
             `).join('');
         }
-        
+
         // Renderizar agendamentos aprovados
-        function renderizarAprovados() {
+        function renderizarAprovados(agendamentosFiltrados) {
             const container = document.getElementById('approved-appointments');
-            const aprovados = agendamentos.filter(a => a.status === 'aprovado');
-            
+            const aprovados = agendamentosFiltrados.filter(a => a.status === 'aprovado');
+
             if (aprovados.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -741,7 +1288,7 @@
                 `;
                 return;
             }
-            
+
             container.innerHTML = aprovados.map(agendamento => `
                 <div class="status-aprovado rounded-xl p-6 card-hover">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -752,6 +1299,7 @@
                             <p class="text-white text-opacity-80"><strong>📅 Data:</strong> ${formatarData(agendamento.date)}</p>
                             <p class="text-white text-opacity-80"><strong>⏰ Horário:</strong> ${agendamento.time}</p>
                             ${agendamento.notes ? `<p class="text-white text-opacity-80"><strong>📝 Obs:</strong> ${agendamento.notes}</p>` : ''}
+                            ${agendamento.approvedBy ? `<p class="text-white text-opacity-60 text-sm"><strong>✔️ Aprovado por:</strong> ${agendamento.approvedBy}</p>` : ''}
                         </div>
                         <div class="flex flex-col justify-center space-y-3">
                             <button 
@@ -765,34 +1313,40 @@
                 </div>
             `).join('');
         }
-        
+
         // Aprovar agendamento
         async function aprovarAgendamento(id) {
+            const agendamento = agendamentos.find(a => a.id === id);
+            if (agendamento) {
+                agendamento.approvedBy = currentUser.username;
+                agendamento.approvedByName = currentUser.name;
+                agendamento.approvedAt = new Date().toISOString();
+            }
             await atualizarStatusAgendamento(id, 'aprovado');
         }
-        
+
         // Recusar agendamento
         async function recusarAgendamento(id) {
             if (confirm('Tem certeza que deseja recusar este agendamento?')) {
                 await deletarAgendamento(id);
             }
         }
-        
+
         // Cancelar agendamento
         async function cancelarAgendamento(id) {
             if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
                 await deletarAgendamento(id);
             }
         }
-        
+
         // Atualizar status do agendamento
         async function atualizarStatusAgendamento(id, novoStatus) {
             try {
                 const agendamento = agendamentos.find(a => a.id === id);
                 if (!agendamento) return;
-                
+
                 agendamento.status = novoStatus;
-                
+
                 const response = await fetch(UPSTASH_URL, {
                     method: 'POST',
                     headers: {
@@ -801,7 +1355,7 @@
                     },
                     body: JSON.stringify(['SET', `agendamento:${id}`, JSON.stringify(agendamento)]),
                 });
-                
+
                 if (response.ok) {
                     showNotification(`Agendamento ${novoStatus} com sucesso!`, 'success');
                     await carregarAgendamentos();
@@ -814,7 +1368,7 @@
                 showNotification('Erro ao atualizar agendamento', 'error');
             }
         }
-        
+
         // Deletar agendamento
         async function deletarAgendamento(id) {
             try {
@@ -826,7 +1380,7 @@
                     },
                     body: JSON.stringify(['DEL', `agendamento:${id}`]),
                 });
-                
+
                 if (response.ok) {
                     showNotification('Agendamento removido com sucesso!', 'success');
                     await carregarAgendamentos();
@@ -839,25 +1393,25 @@
                 showNotification('Erro ao remover agendamento', 'error');
             }
         }
-        
+
         // === SISTEMA DE ORÇAMENTOS ===
-        
+
         // Mostrar formulário de criar orçamento
         function mostrarCriarOrcamento() {
             document.getElementById('form-orcamento').style.display = 'block';
             document.getElementById('orc-cliente-nome').focus();
-            
+
             // Definir data de hoje como padrão
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('orc-data').value = hoje;
         }
-        
+
         // Cancelar criação de orçamento
         function cancelarOrcamento() {
             document.getElementById('form-orcamento').style.display = 'none';
             limparFormularioOrcamento();
         }
-        
+
         // Limpar formulário
         function limparFormularioOrcamento() {
             document.getElementById('orc-cliente-nome').value = '';
@@ -865,7 +1419,7 @@
             document.getElementById('orc-data').value = '';
             document.getElementById('orc-horario').value = '';
             document.getElementById('orc-observacoes').value = '';
-            
+
             // Resetar serviços
             const container = document.getElementById('servicos-container');
             container.innerHTML = `
@@ -883,7 +1437,7 @@
             `;
             atualizarTotalOrcamento();
         }
-        
+
         // Adicionar serviço ao orçamento
         function adicionarServicoOrcamento() {
             const container = document.getElementById('servicos-container');
@@ -902,26 +1456,26 @@
             `;
             container.appendChild(novoServico);
         }
-        
+
         // Remover serviço do orçamento
         function removerServicoOrcamento(button) {
             button.parentElement.remove();
             atualizarTotalOrcamento();
         }
-        
+
         // Atualizar total do orçamento
         function atualizarTotalOrcamento() {
             const valores = document.querySelectorAll('.servico-valor');
             let total = 0;
-            
+
             valores.forEach(input => {
                 const valor = parseFloat(input.value) || 0;
                 total += valor;
             });
-            
+
             document.getElementById('total-orcamento').textContent = total.toFixed(2).replace('.', ',');
         }
-        
+
         // Salvar orçamento
         async function salvarOrcamento() {
             const nomeCliente = document.getElementById('orc-cliente-nome').value.trim();
@@ -929,33 +1483,33 @@
             const data = document.getElementById('orc-data').value;
             const horario = document.getElementById('orc-horario').value;
             const observacoes = document.getElementById('orc-observacoes').value.trim();
-            
+
             if (!nomeCliente || !telefoneCliente || !data || !horario) {
                 showNotification('Preencha todos os campos obrigatórios', 'error');
                 return;
             }
-            
+
             // Coletar serviços
             const servicosDescs = document.querySelectorAll('.servico-desc');
             const servicosValores = document.querySelectorAll('.servico-valor');
             const servicos = [];
             let totalGeral = 0;
-            
+
             for (let i = 0; i < servicosDescs.length; i++) {
                 const desc = servicosDescs[i].value.trim();
                 const valor = parseFloat(servicosValores[i].value) || 0;
-                
+
                 if (desc && valor > 0) {
                     servicos.push({ descricao: desc, valor: valor });
                     totalGeral += valor;
                 }
             }
-            
+
             if (servicos.length === 0) {
                 showNotification('Adicione pelo menos um serviço com valor', 'error');
                 return;
             }
-            
+
             const orcamentoId = Date.now();
             const orcamento = {
                 id: orcamentoId,
@@ -973,9 +1527,9 @@
                 status: 'pendente',
                 createdAt: new Date().toISOString(),
                 profissional: currentUser.name,
-                linkPagamento: `${window.location.origin}/pagamento.html?orc=${orcamentoId}`
+                linkPagamento: `${window.location.origin}/pagamento_page.html?orc=${orcamentoId}`
             };
-            
+
             try {
                 const response = await fetch(UPSTASH_URL, {
                     method: 'POST',
@@ -985,7 +1539,7 @@
                     },
                     body: JSON.stringify(['SET', `orcamento:${orcamentoId}`, JSON.stringify(orcamento)]),
                 });
-                
+
                 if (response.ok) {
                     showNotification('Orçamento criado com sucesso!', 'success');
                     mostrarLinkOrcamento(orcamento);
@@ -1001,7 +1555,7 @@
                 showNotification('Erro ao salvar orçamento', 'error');
             }
         }
-        
+
         // Mostrar link do orçamento
         function mostrarLinkOrcamento(orcamento) {
             const linkElement = document.createElement('div');
@@ -1038,10 +1592,10 @@
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(linkElement);
         }
-        
+
         // Copiar link
         function copiarLink() {
             const linkInput = document.getElementById('link-copy');
@@ -1049,7 +1603,7 @@
             document.execCommand('copy');
             showNotification('Link copiado!', 'success');
         }
-        
+
         // Enviar pelo WhatsApp
         function enviarWhatsApp(telefone, link, nomeCliente, total) {
             const mensagem = `Olá ${nomeCliente}! 
@@ -1060,13 +1614,13 @@ Total: R$ ${total.toFixed(2).replace('.', ',')}
 Para confirmar e pagar, acesse: ${link}
 
 Fabiane Vieira Makeup Hair`;
-            
+
             const telefoneFormatado = telefone.replace(/\D/g, '');
             const whatsappUrl = `https://wa.me/55${telefoneFormatado}?text=${encodeURIComponent(mensagem)}`;
-            
+
             window.open(whatsappUrl, '_blank');
         }
-        
+
         // Fechar modal do link
         function fecharModalLink() {
             const modal = document.querySelector('.modal');
@@ -1074,7 +1628,7 @@ Fabiane Vieira Makeup Hair`;
                 modal.remove();
             }
         }
-        
+
         // Carregar orçamentos
         async function carregarOrcamentos() {
             try {
@@ -1086,11 +1640,11 @@ Fabiane Vieira Makeup Hair`;
                     },
                     body: JSON.stringify(['KEYS', 'orcamento:*']),
                 });
-                
+
                 if (keysResponse.ok) {
                     const keysData = await keysResponse.json();
                     orcamentos = [];
-                    
+
                     if (keysData.result && keysData.result.length > 0) {
                         for (const key of keysData.result) {
                             try {
@@ -1102,7 +1656,7 @@ Fabiane Vieira Makeup Hair`;
                                     },
                                     body: JSON.stringify(['GET', key]),
                                 });
-                                
+
                                 if (getResponse.ok) {
                                     const getData = await getResponse.json();
                                     if (getData.result) {
@@ -1116,18 +1670,67 @@ Fabiane Vieira Makeup Hair`;
                         }
                     }
                 }
-                
-                renderizarOrcamentos();
-                
+
+                await renderizarOrcamentos();
+
             } catch (error) {
                 console.error('Erro ao carregar orçamentos:', error);
             }
         }
-        
+
+        // Carregar pagamentos relacionados aos orçamentos
+        async function carregarPagamentosDoOrcamento(orcamentoId) {
+            try {
+                const keysResponse = await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: UPSTASH_TOKEN,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(['KEYS', 'pagamento:*']),
+                });
+
+                if (keysResponse.ok) {
+                    const keysData = await keysResponse.json();
+
+                    if (keysData.result && keysData.result.length > 0) {
+                        for (const key of keysData.result) {
+                            try {
+                                const getResponse = await fetch(UPSTASH_URL, {
+                                    method: 'POST',
+                                    headers: {
+                                        Authorization: UPSTASH_TOKEN,
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify(['GET', key]),
+                                });
+
+                                if (getResponse.ok) {
+                                    const getData = await getResponse.json();
+                                    if (getData.result) {
+                                        const pagamento = JSON.parse(getData.result);
+                                        if (pagamento.orcamentoId == orcamentoId) {
+                                            return pagamento;
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Erro ao buscar pagamento:', error);
+                            }
+                        }
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Erro ao carregar pagamentos do orçamento:', error);
+                return null;
+            }
+        }
+
         // Renderizar orçamentos
-        function renderizarOrcamentos() {
+        async function renderizarOrcamentos() {
             const container = document.getElementById('orcamentos-list');
-            
+
             if (orcamentos.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -1139,16 +1742,42 @@ Fabiane Vieira Makeup Hair`;
                 `;
                 return;
             }
-            
-            container.innerHTML = orcamentos.map(orc => {
+
+            const orcamentosComPagamentos = await Promise.all(
+                orcamentos.map(async (orc) => {
+                    const pagamento = await carregarPagamentosDoOrcamento(orc.id);
+                    return { ...orc, pagamento };
+                })
+            );
+
+            container.innerHTML = orcamentosComPagamentos.map(orc => {
                 const statusColors = {
                     'pendente': 'bg-yellow-500 bg-opacity-20 border-yellow-500',
                     'aceito': 'bg-green-500 bg-opacity-20 border-green-500',
                     'rejeitado': 'bg-red-500 bg-opacity-20 border-red-500'
                 };
-                
+
+                const temPagamentoDinheiroPendente = orc.pagamento &&
+                                                   orc.pagamento.metodoPagamento === 'dinheiro' &&
+                                                   orc.pagamento.status === 'pendente';
+
                 return `
-                    <div class="glass-effect rounded-xl p-6 card-hover">
+                    <div class="glass-effect rounded-xl p-6 card-hover ${temPagamentoDinheiroPendente ? 'pagamento-dinheiro-pendente' : ''}" style="position: relative;">
+                        ${temPagamentoDinheiroPendente ? `
+                            <span class="alerta-dinheiro">💵 DINHEIRO!</span>
+                            <div class="banner-pagamento-dinheiro rounded-lg p-4 mb-4">
+                                <div class="flex items-center">
+                                    <svg class="w-6 h-6 text-white mr-3 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div>
+                                        <p class="text-white font-bold text-lg">⚠️ PAGAMENTO EM DINHEIRO AGUARDANDO APROVAÇÃO!</p>
+                                        <p class="text-white text-sm opacity-90">Cliente escolheu pagar em dinheiro no local do atendimento</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <div>
                                 <h4 class="text-white font-semibold text-lg mb-2">${orc.cliente.nome}</h4>
@@ -1166,6 +1795,27 @@ Fabiane Vieira Makeup Hair`;
                                 <div class="px-3 py-1 rounded-full ${statusColors[orc.status]} border text-center">
                                     <span class="text-white text-sm font-semibold">${orc.status.toUpperCase()}</span>
                                 </div>
+
+                                ${orc.pagamento ? `
+                                    <div class="text-center">
+                                        <span class="text-white text-opacity-70 text-xs">Pagamento:</span>
+                                        <div class="px-3 py-1 rounded-full ${
+                                            orc.pagamento.status === 'pago' ? 'bg-green-500 bg-opacity-20 border-green-500' :
+                                            temPagamentoDinheiroPendente ? 'bg-red-500 bg-opacity-20 border-red-500' : 'bg-yellow-500 bg-opacity-20 border-yellow-500'
+                                        } border text-center mt-1">
+                                            <span class="text-white text-xs font-semibold">
+                                                ${orc.pagamento.metodoPagamento.toUpperCase()} - ${orc.pagamento.status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                ${temPagamentoDinheiroPendente ? `
+                                    <button onclick="aprovarPagamentoDinheiro('${orc.id}')" class="btn-success text-white px-3 py-2 rounded-lg text-sm hover:opacity-90 animate-pulse">
+                                        ✅ APROVAR PAGAMENTO
+                                    </button>
+                                ` : ''}
+
                                 <button onclick="reenviarLink('${orc.id}')" class="bg-blue-500 bg-opacity-30 text-white px-3 py-2 rounded-lg text-sm hover:bg-opacity-50">
                                     🔗 Reenviar Link
                                 </button>
@@ -1178,7 +1828,87 @@ Fabiane Vieira Makeup Hair`;
                 `;
             }).join('');
         }
-        
+
+        // Aprovar pagamento em dinheiro
+        async function aprovarPagamentoDinheiro(orcamentoId) {
+            try {
+                const pagamento = await carregarPagamentosDoOrcamento(orcamentoId);
+
+                if (pagamento) {
+                    pagamento.status = 'pago';
+                    pagamento.dataPagamento = new Date().toISOString();
+                    pagamento.aprovadoPor = currentUser.name;
+
+                    await fetch(UPSTASH_URL, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: UPSTASH_TOKEN,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(['SET', `pagamento:${pagamento.id}`, JSON.stringify(pagamento)]),
+                    });
+
+                    const orcamento = orcamentos.find(o => o.id == orcamentoId);
+                    if (orcamento) {
+                        const novoAgendamento = {
+                            id: Date.now(),
+                            clientName: orcamento.cliente.nome,
+                            clientPhone: orcamento.cliente.telefone,
+                            service: orcamento.servicos.map(s => s.descricao).join(', '),
+                            date: orcamento.agendamento.data,
+                            time: orcamento.agendamento.horario,
+                            notes: `Pagamento em dinheiro - R$ ${orcamento.total.toFixed(2).replace('.', ',')}`,
+                            status: 'aprovado',
+                            createdAt: new Date().toISOString(),
+                            approvedBy: currentUser.name
+                        };
+
+                        await fetch(UPSTASH_URL, {
+                            method: 'POST',
+                            headers: {
+                                Authorization: UPSTASH_TOKEN,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(['SET', `agendamento:${novoAgendamento.id}`, JSON.stringify(novoAgendamento)]),
+                        });
+                    }
+
+                    showNotification('Pagamento aprovado com sucesso!', 'success');
+                    await carregarTodosDados();
+                }
+            } catch (error) {
+                console.error('Erro ao aprovar pagamento:', error);
+                showNotification('Erro ao aprovar pagamento', 'error');
+            }
+        }
+
+        // Atualizar indicador visual da aba
+        async function atualizarIndicadorAbaOrcamentos() {
+            let temDinheiroPendente = false;
+
+            for (const orc of orcamentos) {
+                const pagamento = await carregarPagamentosDoOrcamento(orc.id);
+                if (pagamento && pagamento.metodoPagamento === 'dinheiro' && pagamento.status === 'pendente') {
+                    temDinheiroPendente = true;
+                    break;
+                }
+            }
+
+            const tabOrcamentos = document.getElementById('tab-orcamentos');
+            if (temDinheiroPendente) {
+                tabOrcamentos.innerHTML = `
+                    💰 Orçamentos 
+                    <span class="inline-block ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full animate-pulse">
+                        💵 DINHEIRO
+                    </span>
+                `;
+                tabOrcamentos.classList.add('border', 'border-red-500', 'animate-pulse');
+            } else {
+                tabOrcamentos.innerHTML = '💰 Orçamentos';
+                tabOrcamentos.classList.remove('border', 'border-red-500', 'animate-pulse');
+            }
+        }
+
         // Reenviar link do orçamento
         function reenviarLink(orcamentoId) {
             const orcamento = orcamentos.find(o => o.id == orcamentoId);
@@ -1186,11 +1916,11 @@ Fabiane Vieira Makeup Hair`;
                 mostrarLinkOrcamento(orcamento);
             }
         }
-        
+
         // Excluir orçamento
         async function excluirOrcamento(orcamentoId) {
             if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
-            
+
             try {
                 await fetch(UPSTASH_URL, {
                     method: 'POST',
@@ -1200,19 +1930,19 @@ Fabiane Vieira Makeup Hair`;
                     },
                     body: JSON.stringify(['DEL', `orcamento:${orcamentoId}`]),
                 });
-                
+
                 showNotification('Orçamento excluído com sucesso!', 'success');
                 await carregarOrcamentos();
                 atualizarEstatisticas();
-                
+
             } catch (error) {
                 console.error('Erro:', error);
                 showNotification('Erro ao excluir orçamento', 'error');
             }
         }
-        
+
         // === SISTEMA DE PAGAMENTOS ===
-        
+
         // Carregar pagamentos
         async function carregarPagamentos() {
             try {
@@ -1224,11 +1954,11 @@ Fabiane Vieira Makeup Hair`;
                     },
                     body: JSON.stringify(['KEYS', 'pagamento:*']),
                 });
-                
+
                 if (keysResponse.ok) {
                     const keysData = await keysResponse.json();
                     pagamentos = [];
-                    
+
                     if (keysData.result && keysData.result.length > 0) {
                         for (const key of keysData.result) {
                             try {
@@ -1240,7 +1970,7 @@ Fabiane Vieira Makeup Hair`;
                                     },
                                     body: JSON.stringify(['GET', key]),
                                 });
-                                
+
                                 if (getResponse.ok) {
                                     const getData = await getResponse.json();
                                     if (getData.result) {
@@ -1254,18 +1984,18 @@ Fabiane Vieira Makeup Hair`;
                         }
                     }
                 }
-                
+
                 renderizarPagamentos();
-                
+
             } catch (error) {
                 console.error('Erro ao carregar pagamentos:', error);
             }
         }
-        
+
         // Renderizar pagamentos
         function renderizarPagamentos() {
             const container = document.getElementById('pagamentos-list');
-            
+
             if (pagamentos.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8">
@@ -1277,21 +2007,21 @@ Fabiane Vieira Makeup Hair`;
                 `;
                 return;
             }
-            
+
             container.innerHTML = pagamentos.map(pag => {
                 const statusColors = {
                     'pendente': 'bg-yellow-500 bg-opacity-20 border-yellow-500',
                     'pago': 'bg-green-500 bg-opacity-20 border-green-500',
                     'cancelado': 'bg-red-500 bg-opacity-20 border-red-500'
                 };
-                
+
                 const metodosIcons = {
                     'dinheiro': '💵',
                     'pix': '📱',
                     'cartao': '💳',
                     'mercadopago': '🛒'
                 };
-                
+
                 return `
                     <div class="glass-effect rounded-xl p-6 card-hover">
                         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center">
@@ -1317,35 +2047,81 @@ Fabiane Vieira Makeup Hair`;
                 `;
             }).join('');
         }
-        
+
         // Atualizar estatísticas
-        function atualizarEstatisticas() {
-            const pendentes = agendamentos.filter(a => a.status === 'pendente').length;
-            const aprovados = agendamentos.filter(a => a.status === 'aprovado').length;
-            const totalOrcamentos = orcamentos.length;
-            const totalPagamentos = pagamentos.length;
+        async function atualizarEstatisticas() {
+            const permissoes = PERMISSOES[currentUser.role];
             
-            document.getElementById('stat-pendentes').textContent = pendentes;
-            document.getElementById('stat-aprovados').textContent = aprovados;
-            document.getElementById('stat-orcamentos').textContent = totalOrcamentos;
-            document.getElementById('stat-pagamentos').textContent = totalPagamentos;
+            if (permissoes.estatisticas.includes('todas')) {
+                // Proprietário vê todas as estatísticas
+                const pendentes = agendamentos.filter(a => a.status === 'pendente').length;
+                const aprovados = agendamentos.filter(a => a.status === 'aprovado').length;
+                const totalOrcamentos = orcamentos.length;
+                const totalPagamentos = pagamentos.length;
+
+                document.getElementById('stat-pendentes').textContent = pendentes;
+                document.getElementById('stat-aprovados').textContent = aprovados;
+                document.getElementById('stat-orcamentos').textContent = totalOrcamentos;
+                document.getElementById('stat-pagamentos').textContent = totalPagamentos;
+
+                // Verificar pagamentos em dinheiro pendentes
+                let dinheiroPendente = 0;
+                for (const orc of orcamentos) {
+                    const pagamento = await carregarPagamentosDoOrcamento(orc.id);
+                    if (pagamento && pagamento.metodoPagamento === 'dinheiro' && pagamento.status === 'pendente') {
+                        dinheiroPendente++;
+                    }
+                }
+
+                if (dinheiroPendente > 0) {
+                    const orcamentosCard = document.getElementById('stat-orcamentos').parentElement.parentElement.parentElement;
+                    orcamentosCard.classList.add('pagamento-dinheiro-pendente');
+                    document.getElementById('stat-orcamentos').innerHTML = `
+                        ${totalOrcamentos} 
+                        <span class="text-xs block text-red-300 animate-pulse">
+                            ${dinheiroPendente} em dinheiro
+                        </span>
+                    `;
+                } else {
+                    const orcamentosCard = document.getElementById('stat-orcamentos').parentElement.parentElement.parentElement;
+                    orcamentosCard.classList.remove('pagamento-dinheiro-pendente');
+                    document.getElementById('stat-orcamentos').textContent = totalOrcamentos;
+                }
+            } else if (permissoes.estatisticas.includes('proprias')) {
+                // Colaborador vê apenas suas próprias estatísticas
+                const meusPendentes = agendamentos.filter(a => 
+                    a.status === 'pendente' && 
+                    (a.grupo === currentUser.grupo || !a.grupo)
+                ).length;
+                
+                const meusAprovados = agendamentos.filter(a => 
+                    a.status === 'aprovado' && 
+                    a.approvedBy === currentUser.username
+                ).length;
+
+                document.getElementById('stat-pendentes').textContent = meusPendentes;
+                document.getElementById('stat-aprovados').innerHTML = `
+                    ${meusAprovados}
+                    <span class="text-xs block text-white text-opacity-60">Seus aprovados</span>
+                `;
+            }
         }
-        
+
         // Gerenciamento de tabs
         function showTab(tab) {
             // Esconder todos os conteúdos
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.style.display = 'none';
             });
-            
+
             // Remover classes ativas dos botões
             document.querySelectorAll('[id^="tab-"]').forEach(btn => {
                 btn.className = 'px-6 py-3 rounded-lg font-semibold transition-all text-white text-opacity-70 hover:text-opacity-100';
             });
-            
+
             // Mostrar conteúdo ativo
             document.getElementById(`content-${tab}`).style.display = 'block';
-            
+
             // Ativar botão
             const activeBtn = document.getElementById(`tab-${tab}`);
             if (tab === 'pendentes') {
@@ -1356,32 +2132,72 @@ Fabiane Vieira Makeup Hair`;
             } else if (tab === 'pagamentos') {
                 activeBtn.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-blue-500 bg-opacity-30 text-white';
                 carregarPagamentos();
+            } else if (tab === 'colaboradores') {
+                activeBtn.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-indigo-500 bg-opacity-30 text-white';
+                carregarColaboradores();
             }
         }
-        
+
         // Funções auxiliares
         function formatarData(dateStr) {
             const date = new Date(dateStr + 'T00:00:00');
             return date.toLocaleDateString('pt-BR');
         }
-        
+
         function formatarDataHora(dateTimeStr) {
             const date = new Date(dateTimeStr);
             return date.toLocaleString('pt-BR');
         }
-        
+
         function showNotification(message, type) {
             const notification = document.createElement('div');
             notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white font-semibold z-50 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
             notification.textContent = message;
-            
+
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.remove();
             }, 3000);
         }
-        
+
+        // Abrir modal de orçamento do agendamento
+        function abrirModalOrcamentoDoAgendamento(id) {
+            const agendamento = agendamentos.find(a => a.id === id);
+            if (!agendamento) {
+                showNotification('Agendamento não encontrado', 'error');
+                return;
+            }
+            
+            // Troca para a aba de Orçamentos
+            showTab('orcamentos');
+
+            // Mostra o formulário e preenche com os dados do agendamento
+            document.getElementById('form-orcamento').style.display = 'block';
+            document.getElementById('orc-cliente-nome').value = agendamento.clientName || '';
+            document.getElementById('orc-cliente-telefone').value = agendamento.clientPhone || '';
+            document.getElementById('orc-data').value = agendamento.date || '';
+            document.getElementById('orc-horario').value = agendamento.time || '';
+            document.getElementById('orc-observacoes').value = agendamento.notes || '';
+
+            // Preenche serviço no campo
+            const servicosContainer = document.getElementById('servicos-container');
+            servicosContainer.innerHTML = `
+                <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                        <input type="text" placeholder="Descrição do serviço" value="${agendamento.service || ''}" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 servico-desc">
+                    </div>
+                    <div class="w-32">
+                        <input type="number" placeholder="Valor" step="0.01" class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 servico-valor" onchange="atualizarTotalOrcamento()">
+                    </div>
+                    <button type="button" onclick="adicionarServicoOrcamento()" class="bg-green-500 bg-opacity-30 text-white px-3 py-3 rounded-lg hover:bg-opacity-50">
+                        +
+                    </button>
+                </div>
+            `;
+            atualizarTotalOrcamento();
+        }
+
         // Inicializar quando a página carregar
         document.addEventListener('DOMContentLoaded', function() {
             inicializarSistema();
