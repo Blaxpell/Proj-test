@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrigir Usuário Mestre</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .success { border-left: 4px solid #28a745; }
+        .error { border-left: 4px solid #dc3545; }
+        .warning { border-left: 4px solid #ffc107; }
+        .info { border-left: 4px solid #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Corrigir Usuário Mestre</h1>
+        <p>Esta ferramenta vai corrigir o problema do usuário mestre.</p>
+        
+        <div>
+            <button onclick="clearStorage()" class="danger">1. Limpar Cache Local</button>
+            <button onclick="checkCurrentUsers()" class="warning">2. Verificar Usuários Atuais</button>
+            <button onclick="createMasterUser()" class="success">3. Criar Usuário Mestre</button>
+            <button onclick="testLogin()" class="info">4. Testar Login</button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const UPSTASH_URL = 'https://coherent-escargot-23835.upstash.io/';
+        const UPSTASH_TOKEN = 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA';
+
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            result.appendChild(div);
+            result.scrollTop = result.scrollHeight;
+        }
+
+        function clearStorage() {
+            log('🧹 Limpando localStorage...', 'warning');
+            
+            try {
+                // Limpar todos os dados do localStorage
+                localStorage.removeItem('salon_user');
+                localStorage.removeItem('admin_token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('auth_token');
+                
+                // Limpar sessionStorage também
+                sessionStorage.clear();
+                
+                log('✅ localStorage limpo com sucesso!', 'success');
+                log('ℹ️ Agora você pode fazer login novamente.', 'info');
+                
+            } catch (error) {
+                log(`❌ Erro ao limpar storage: ${error.message}`, 'error');
+            }
+        }
+
+        async function redisCommand(command) {
+            try {
+                const response = await fetch(UPSTASH_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': UPSTASH_TOKEN,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(command),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Erro no Redis:', error);
+                throw error;
+            }
+        }
+
+        async function checkCurrentUsers() {
+            log('🔍 Verificando usuários existentes...', 'warning');
+            
+            try {
+                // Buscar todas as chaves de usuários
+                const keysResult = await redisCommand(['KEYS', 'user:*']);
+                
+                if (!keysResult.result || keysResult.result.length === 0) {
+                    log('❌ Nenhum usuário encontrado no sistema', 'error');
+                    log('ℹ️ Você precisa criar um usuário mestre primeiro.', 'info');
+                    return;
+                }
+                
+                log(`✅ Encontrados ${keysResult.result.length} usuário(s):`, 'success');
+                
+                for (const key of keysResult.result) {
+                    try {
+                        const userResult = await redisCommand(['GET', key]);
+                        if (userResult.result) {
+                            const userData = JSON.parse(userResult.result);
+                            
+                            log(`\n📋 ${key}:`, 'info');
+                            log(`  Nome: ${userData.name || 'N/A'}`, 'info');
+                            log(`  Username: ${userData.username || 'N/A'}`, 'info');
+                            log(`  Email: ${userData.email || 'N/A'}`, 'info');
+                            log(`  Role: ${userData.role || 'N/A'}`, 'info');
+                            log(`  Ativo: ${userData.active !== undefined ? (userData.active ? 'Sim' : 'Não') : 'Campo ausente'}`, 'info');
+                            log(`  Senha: ${userData.password || 'N/A'}`, 'info');
+                            
+                            // Verificar se tem problemas
+                            if (userData.active === undefined) {
+                                log(`  ⚠️ Campo 'active' ausente!`, 'warning');
+                            }
+                            if (!userData.role) {
+                                log(`  ⚠️ Campo 'role' ausente!`, 'warning');
+                            }
+                        }
+                    } catch (error) {
+                        log(`❌ Erro ao ler ${key}: ${error.message}`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        async function createMasterUser() {
+            log('➕ Criando usuário mestre compatível...', 'warning');
+            
+            try {
+                // Criar usuário com TODOS os campos necessários
+                const masterUser = {
+                    id: Date.now(),
+                    name: 'Administrador Master',
+                    username: 'admin',
+                    email: 'admin@salao.com',
+                    password: '123456',
+                    role: 'proprietario',
+                    active: true,                    // ✅ Campo obrigatório
+                    firstLogin: false,              // ✅ Para não pedir mudança de senha
+                    createdAt: new Date().toISOString(),
+                    lastLogin: null,
+                    professionalId: null            // ✅ Para compatibilidade
+                };
+                
+                // Salvar no Redis
+                const result = await redisCommand(['SET', 'user:admin', JSON.stringify(masterUser)]);
+                
+                if (result.result === 'OK') {
+                    log('✅ Usuário mestre criado com sucesso!', 'success');
+                    log('', 'success');
+                    log('📋 CREDENCIAIS DE ACESSO:', 'success');
+                    log('Username: admin', 'success');
+                    log('Password: 123456', 'success');
+                    log('Role: proprietario', 'success');
+                    log('', 'success');
+                    log('🎯 Agora você pode fazer login no painel administrativo!', 'success');
+                } else {
+                    log(`❌ Erro inesperado: ${JSON.stringify(result)}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro ao criar usuário: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            log('🔐 Testando processo de login...', 'warning');
+            
+            const username = 'admin';
+            const password = '123456';
+            
+            try {
+                log(`ℹ️ Testando login com username: ${username}`, 'info');
+                
+                // Simular o processo do AuthContext
+                const response = await redisCommand(['GET', `user:${username}`]);
+                
+                if (!response.result) {
+                    log(`❌ Usuário '${username}' não encontrado`, 'error');
+                    log('ℹ️ Execute "3. Criar Usuário Mestre" primeiro.', 'info');
+                    return;
+                }
+                
+                const userData = JSON.parse(response.result);
+                
+                log(`✅ Usuário encontrado!`, 'success');
+                log(`Nome: ${userData.name}`, 'success');
+                log(`Role: ${userData.role}`, 'success');
+                log(`Ativo: ${userData.active}`, 'success');
+                
+                // Verificar estrutura
+                if (userData.active === undefined) {
+                    log(`❌ Campo 'active' ausente - isso causará erro no login!`, 'error');
+                    return;
+                }
+                
+                if (!userData.active) {
+                    log(`❌ Usuário inativo - login será negado!`, 'error');
+                    return;
+                }
+                
+                if (userData.password === password) {
+                    log(`✅ Senha correta!`, 'success');
+                    log(`✅ Login será bem-sucedido!`, 'success');
+                    log('', 'success');
+                    log('🎉 O AuthContext agora deve funcionar corretamente!', 'success');
+                } else {
+                    log(`❌ Senha incorreta!`, 'error');
+                    log(`Senha esperada: '${password}'`, 'error');
+                    log(`Senha atual: '${userData.password}'`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Erro no teste: ${error.message}`, 'error');
+            }
+        }
+
+        // Limpar resultados
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+        }
+
+        // Executar verificação inicial
+        window.onload = function() {
+            log('🔧 Ferramenta de correção do usuário mestre carregada.', 'info');
+            log('ℹ️ Clique nos botões na ordem para corrigir o problema.', 'info');
+        };
+    </script>
+</body>
+</html>
