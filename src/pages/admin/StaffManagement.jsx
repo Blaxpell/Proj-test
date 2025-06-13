@@ -149,6 +149,60 @@ const StaffManagement = () => {
     { id: 'dom', name: 'Domingo' }
   ];
 
+  // 🔧 FUNÇÃO DEBUG ADICIONADA
+  const debugUserCreation = (step, data, error = null) => {
+    console.log(`[STAFF-CREATION] ${step}:`, { data, error, timestamp: new Date().toISOString() });
+  };
+
+  // 🔧 FUNÇÃO FALTANTE ADICIONADA - getUserDataForRoles
+  const getUserDataForRoles = async (professional) => {
+    try {
+      if (!professional.hasUserAccount || !professional.username) {
+        throw new Error('Profissional não tem conta de usuário');
+      }
+
+      debugUserCreation('BUSCANDO DADOS PARA ROLES', { username: professional.username });
+
+      // Buscar dados completos do usuário no Redis
+      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(['GET', `user:${professional.username}`]),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao buscar dados do usuário');
+      }
+
+      const data = await response.json();
+      
+      if (!data.result) {
+        throw new Error('Usuário não encontrado no sistema');
+      }
+
+      const userData = JSON.parse(data.result);
+      
+      // Combinar dados do profissional com dados do usuário
+      const combinedData = {
+        ...userData,
+        professional: professional,
+        displayName: professional.name || userData.name,
+        roles: userData.roles || (userData.role ? [userData.role] : [])
+      };
+
+      debugUserCreation('DADOS PARA ROLES ENCONTRADOS', combinedData);
+      return combinedData;
+
+    } catch (error) {
+      debugUserCreation('ERRO AO BUSCAR DADOS PARA ROLES', error);
+      console.error('Erro ao buscar dados do usuário para roles:', error);
+      return null;
+    }
+  };
+
   // Carregar categorias do Redis
   const loadCategories = async () => {
     try {
@@ -279,60 +333,143 @@ const StaffManagement = () => {
 
   // Carregar profissionais do Redis
   const loadProfessionals = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(['KEYS', 'profissional:*']),
-      });
-
-      if (response.ok) {
-        const keysData = await response.json();
-        let allProfessionals = [];
-
-        if (keysData.result && Array.isArray(keysData.result)) {
-          for (const key of keysData.result) {
-            try {
-              const getResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
-                method: 'POST',
-                headers: {
-                  Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(['GET', key]),
-              });
-
-              if (getResponse.ok) {
-                const getData = await getResponse.json();
-                if (getData.result) {
-                  const professional = JSON.parse(getData.result);
-                  allProfessionals.push(professional);
-                }
+  setLoading(true);
+  try {
+    const allUsers = [];
+    
+    // 1. Buscar profissionais
+    const profResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(['KEYS', 'profissional:*']),
+    });
+    
+    if (profResponse.ok) {
+      const profKeysData = await profResponse.json();
+      
+      if (profKeysData.result && Array.isArray(profKeysData.result)) {
+        for (const key of profKeysData.result) {
+          try {
+            const getResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+              method: 'POST',
+              headers: {
+                Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(['GET', key]),
+            });
+            
+            if (getResponse.ok) {
+              const getData = await getResponse.json();
+              if (getData.result) {
+                const professional = JSON.parse(getData.result);
+                professional.userType = professional.userType || 'professional';
+                allUsers.push(professional);
               }
-            } catch (error) {
-              console.error(`Erro ao buscar ${key}:`, error);
             }
+          } catch (error) {
+            console.error(`Erro ao buscar profissional ${key}:`, error);
           }
         }
-
-        setProfessionals(allProfessionals);
-        setFilteredProfessionals(allProfessionals);
       }
-    } catch (error) {
-      console.error('Erro ao carregar profissionais:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar profissionais",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // 2. Buscar usuários administrativos
+    const userResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(['KEYS', 'user:*']),
+    });
+    
+    if (userResponse.ok) {
+      const userKeysData = await userResponse.json();
+      
+      if (userKeysData.result && Array.isArray(userKeysData.result)) {
+        for (const key of userKeysData.result) {
+          try {
+            const getUserResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+              method: 'POST',
+              headers: {
+                Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(['GET', key]),
+            });
+            
+            if (getUserResponse.ok) {
+              const getUserData = await getUserResponse.json();
+              if (getUserData.result) {
+                const userData = JSON.parse(getUserData.result);
+                
+                // Verificar se é usuário administrativo
+                const isAdministrative = userData.userType === 'administrative' || 
+                                       (!userData.professionalId && ['gerente', 'atendente'].includes(userData.role));
+                
+                if (isAdministrative) {
+                  // Converter para formato compatível
+                  const adminUser = {
+                    id: userData.id || userData.username,
+                    name: userData.name,
+                    category: 'administrativo',
+                    photo: userData.photo || '',
+                    specialties: [],
+                    experience: '',
+                    price: '',
+                    phone: userData.phone || '',
+                    email: userData.email || '',
+                    status: userData.active ? 'active' : 'inactive',
+                    bio: userData.bio || '',
+                    workDays: [],
+                    startTime: '',
+                    endTime: '',
+                    rating: 0,
+                    hasUserAccount: true,
+                    username: userData.username,
+                    userType: 'administrative',
+                    role: userData.role,
+                    roles: userData.roles || [userData.role],
+                    createdAt: userData.createdAt
+                  };
+                  
+                  // Verificar duplicatas
+                  const alreadyExists = allUsers.some(u => 
+                    u.username === adminUser.username || 
+                    (u.id && u.id === adminUser.id)
+                  );
+                  
+                  if (!alreadyExists) {
+                    allUsers.push(adminUser);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Erro ao buscar usuário ${key}:`, error);
+          }
+        }
+      }
+    }
+    
+    setProfessionals(allUsers);
+    setFilteredProfessionals(allUsers);
+    
+  } catch (error) {
+    console.error('Erro ao carregar usuários:', error);
+    toast({
+      title: "Erro",
+      description: "Erro ao carregar usuários",
+      variant: "destructive"
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Filtrar profissionais
   useEffect(() => {
@@ -509,8 +646,10 @@ const StaffManagement = () => {
     resetForm();
   };
 
-  // Salvar novo usuário (profissional ou administrativo)
+  // 🔧 FUNÇÃO SAVEUSER MELHORADA COM DEBUG E TRATAMENTO DE ERRO
   const saveNewUser = async () => {
+    debugUserCreation('INÍCIO', { userType: formData.userType, createLogin: formData.createLogin });
+
     if (!canCreateUsers) {
       toast({
         title: "Sem permissão",
@@ -520,7 +659,8 @@ const StaffManagement = () => {
       return;
     }
 
-    if (!formData.name) {
+    // Validações básicas
+    if (!formData.name?.trim()) {
       toast({
         title: "Erro",
         description: "Nome é obrigatório",
@@ -532,7 +672,7 @@ const StaffManagement = () => {
     // Validações específicas por tipo
     if (formData.userType === 'professional' && !formData.category) {
       toast({
-        title: "Erro",
+        title: "Erro", 
         description: "Categoria é obrigatória para profissionais",
         variant: "destructive"
       });
@@ -541,7 +681,7 @@ const StaffManagement = () => {
 
     // Validações de login
     if (formData.createLogin) {
-      if (!formData.username) {
+      if (!formData.username?.trim()) {
         toast({
           title: "Erro",
           description: "Username é obrigatório para criar login",
@@ -553,7 +693,7 @@ const StaffManagement = () => {
       if (formData.password !== formData.confirmPassword) {
         toast({
           title: "Erro",
-          description: "As senhas não coincidem",
+          description: "As senhas não coincidem", 
           variant: "destructive"
         });
         return;
@@ -570,33 +710,37 @@ const StaffManagement = () => {
     }
 
     try {
+      debugUserCreation('VALIDAÇÕES OK', formData);
       let professionalId = null;
       
-      // 1. Se for profissional, criar entrada de profissional
+      // 1. Criar entrada de profissional (se for profissional)
       if (formData.userType === 'professional') {
         professionalId = Date.now();
         
         const newProfessional = {
           id: professionalId,
           name: formData.name,
-          category: formData.category, // Usando categoria personalizada
-          photo: formData.photo,
-          specialties: formData.specialties.split(',').map(s => s.trim()).filter(s => s),
-          experience: formData.experience,
-          price: formData.price,
-          phone: formData.phone,
-          email: formData.email,
-          status: formData.status,
-          bio: formData.bio,
-          workDays: formData.workDays,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
+          category: formData.category,
+          photo: formData.photo || '',
+          specialties: formData.specialties ? formData.specialties.split(',').map(s => s.trim()).filter(s => s) : [],
+          experience: formData.experience || '',
+          price: formData.price || '',
+          phone: formData.phone || '',
+          email: formData.email || '',
+          status: formData.status || 'active',
+          bio: formData.bio || '',
+          workDays: formData.workDays || ['seg', 'ter', 'qua', 'qui', 'sex'],
+          startTime: formData.startTime || '08:00',
+          endTime: formData.endTime || '18:00',
           rating: 5.0,
           hasUserAccount: formData.createLogin,
           username: formData.createLogin ? formData.username : null,
-          userType: 'professional', // Novo campo
-          createdAt: new Date().toISOString()
+          userType: 'professional',
+          createdAt: new Date().toISOString(),
+          createdBy: user?.username || 'system'
         };
+
+        debugUserCreation('CRIANDO PROFISSIONAL', newProfessional);
 
         // Salvar profissional no Redis
         const profResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
@@ -609,8 +753,12 @@ const StaffManagement = () => {
         });
 
         if (!profResponse.ok) {
-          throw new Error('Erro ao salvar profissional');
+          const errorText = await profResponse.text();
+          debugUserCreation('ERRO AO SALVAR PROFISSIONAL', { status: profResponse.status, error: errorText });
+          throw new Error(`Erro ao salvar profissional: ${profResponse.status}`);
         }
+
+        debugUserCreation('PROFISSIONAL CRIADO', { id: professionalId });
       }
 
       // 2. Criar usuário de login (se solicitado)
@@ -618,15 +766,21 @@ const StaffManagement = () => {
         try {
           const userRole = formData.userType === 'professional' ? 'profissional' : formData.adminRole;
           
-          await createUser({
+          const newUserData = {
             name: formData.name,
             username: formData.username,
-            email: formData.email,
+            email: formData.email || '',
             role: userRole,
             password: formData.password,
-            professionalId: professionalId, // Só terá valor se for profissional
-            userType: formData.userType // Novo campo para distinguir tipos
-          });
+            professionalId: professionalId,
+            userType: formData.userType
+          };
+
+          debugUserCreation('CRIANDO USUÁRIO', newUserData);
+
+          const createdUser = await createUser(newUserData);
+
+          debugUserCreation('USUÁRIO CRIADO', createdUser);
 
           const userTypeLabel = formData.userType === 'professional' ? 'Profissional' : 'Usuário administrativo';
           
@@ -645,12 +799,23 @@ const StaffManagement = () => {
           }, 1000);
 
         } catch (userError) {
+          debugUserCreation('ERRO AO CRIAR USUÁRIO', userError);
           console.error('Erro ao criar usuário:', userError);
-          toast({
-            title: "⚠️ Erro ao criar login",
-            description: userError.message || "Houve erro ao criar o acesso ao sistema.",
-            variant: "destructive"
-          });
+          
+          // Se criou profissional mas falhou usuário, informar
+          if (professionalId) {
+            toast({
+              title: "⚠️ Profissional criado, erro no login",
+              description: `${formData.name} foi criado como profissional, mas houve erro ao criar acesso: ${userError.message}`,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "⚠️ Erro ao criar login",
+              description: userError.message || "Houve erro ao criar o acesso ao sistema.",
+              variant: "destructive"
+            });
+          }
         }
       } else {
         const userTypeLabel = formData.userType === 'professional' ? 'Profissional' : 'Usuário';
@@ -660,14 +825,16 @@ const StaffManagement = () => {
         });
       }
 
+      debugUserCreation('PROCESSO FINALIZADO', { success: true });
       closeModals();
       loadProfessionals();
 
     } catch (error) {
+      debugUserCreation('ERRO GERAL', error);
       console.error('Erro ao criar usuário:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar usuário",
+        description: `Erro ao criar usuário: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -741,13 +908,24 @@ const StaffManagement = () => {
     }
   };
 
-  // Carregar dados ao montar componente
+  // 🔧 USEEFFECT MELHORADO COM DEBUG DE PERMISSÕES
   useEffect(() => {
+    // Debug das permissões do usuário atual
+    console.log('[STAFF-PERMISSIONS]', {
+      user: user?.username,
+      role: user?.role,
+      canManageStaff,
+      canCreateUsers,
+      canEditUsers,
+      canDeleteUsers,
+      isMasterUser: isMasterUser()
+    });
+
     if (hasPermission('view_staff') || hasPermission('manage_staff')) {
       loadCategories();
       loadProfessionals();
     }
-  }, []);
+  }, [user]); // Adicionado user como dependência
 
   // Auto-gerar username quando nome mudar
   useEffect(() => {
