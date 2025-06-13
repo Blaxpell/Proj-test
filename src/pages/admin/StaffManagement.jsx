@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import UserRolesManager from './UserRolesManager';
 import { 
   Users, 
   UserPlus, 
@@ -28,7 +29,8 @@ import {
   UserCheck,
   UserCog,
   Briefcase,
-  Shield
+  Shield,
+  Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 
 const StaffManagement = () => {
-  const { user, hasPermission, createUser } = useAuth();
+  const { user, hasPermission, createUser, updateUser, deactivateUser, isMasterUser } = useAuth();
   const [professionals, setProfessionals] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,17 @@ const StaffManagement = () => {
   const [filteredProfessionals, setFilteredProfessionals] = useState([]);
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterType, setFilterType] = useState('all'); // Novo filtro por tipo
+  
+  // Estados para o gerenciador de roles
+  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [userForRoles, setUserForRoles] = useState(null);
+
+  // Verificações de permissão
+  const canManageStaff = hasPermission('manage_staff');
+  const canManageCategories = hasPermission('manage_categories') || isMasterUser();
+  const canCreateUsers = isMasterUser() || hasPermission('manage_staff');
+  const canEditUsers = isMasterUser() || hasPermission('manage_staff');
+  const canDeleteUsers = isMasterUser(); // Apenas usuário mestre pode deletar
 
   // Estados do formulário expandido
   const [formData, setFormData] = useState({
@@ -176,6 +189,16 @@ const StaffManagement = () => {
 
   // Salvar categorias no Redis
   const saveCategories = async (categoriesToSave) => {
+    // Verificar permissão
+    if (!canManageCategories) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para gerenciar categorias",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
         method: 'POST',
@@ -205,6 +228,15 @@ const StaffManagement = () => {
 
   // Adicionar nova categoria
   const addCategory = async () => {
+    if (!canManageCategories) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para adicionar categorias",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!categoryForm.name.trim()) {
       toast({
         title: "Erro",
@@ -230,6 +262,15 @@ const StaffManagement = () => {
 
   // Remover categoria
   const removeCategory = async (categoryId) => {
+    if (!canManageCategories) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para remover categorias",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!confirm('Tem certeza que deseja remover esta categoria?')) return;
     
     const updatedCategories = categories.filter(cat => cat.id !== categoryId);
@@ -363,8 +404,100 @@ const StaffManagement = () => {
 
   // Abrir modal de adicionar
   const openAddModal = () => {
+    if (!canCreateUsers) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para adicionar novos usuários",
+        variant: "destructive"
+      });
+      return;
+    }
     resetForm();
     setShowAddModal(true);
+  };
+
+  // Abrir modal de editar
+  const openEditModal = (professional) => {
+    if (!canEditUsers) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para editar usuários",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedProfessional(professional);
+    setFormData({
+      userType: professional.userType || 'professional',
+      name: professional.name || '',
+      category: professional.category || '',
+      photo: professional.photo || '',
+      specialties: Array.isArray(professional.specialties) ? professional.specialties.join(', ') : professional.specialties || '',
+      experience: professional.experience || '',
+      price: professional.price || '',
+      phone: professional.phone || '',
+      email: professional.email || '',
+      status: professional.status || 'active',
+      bio: professional.bio || '',
+      workDays: professional.workDays || ['seg', 'ter', 'qua', 'qui', 'sex'],
+      startTime: professional.startTime || '08:00',
+      endTime: professional.endTime || '18:00',
+      createLogin: false,
+      username: professional.username || '',
+      password: '',
+      confirmPassword: '',
+      adminRole: 'gerente'
+    });
+    setShowEditModal(true);
+  };
+
+  // Deletar profissional
+  const deleteProfessional = async (professional) => {
+    if (!canDeleteUsers) {
+      toast({
+        title: "Sem permissão",
+        description: "Apenas o usuário mestre pode excluir colaboradores",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir ${professional.name}?`)) return;
+
+    try {
+      // 1. Se tiver usuário associado, desativar primeiro
+      if (professional.hasUserAccount && professional.username) {
+        await deactivateUser(professional.username);
+      }
+
+      // 2. Deletar profissional do Redis
+      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(['DEL', `profissional:${professional.id}`]),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Sucesso",
+          description: `${professional.name} foi removido com sucesso`,
+        });
+        loadProfessionals();
+      } else {
+        throw new Error('Erro ao deletar profissional');
+      }
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir colaborador",
+        variant: "destructive"
+      });
+    }
   };
 
   // Fechar modais
@@ -378,6 +511,15 @@ const StaffManagement = () => {
 
   // Salvar novo usuário (profissional ou administrativo)
   const saveNewUser = async () => {
+    if (!canCreateUsers) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para criar usuários",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!formData.name) {
       toast({
         title: "Erro",
@@ -531,19 +673,89 @@ const StaffManagement = () => {
     }
   };
 
+  // Atualizar profissional existente
+  const updateProfessional = async () => {
+    if (!canEditUsers) {
+      toast({
+        title: "Sem permissão",
+        description: "Você não tem permissão para editar usuários",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedProfessional) return;
+
+    try {
+      const updatedProfessional = {
+        ...selectedProfessional,
+        name: formData.name,
+        category: formData.category,
+        photo: formData.photo,
+        specialties: formData.specialties.split(',').map(s => s.trim()).filter(s => s),
+        experience: formData.experience,
+        price: formData.price,
+        phone: formData.phone,
+        email: formData.email,
+        status: formData.status,
+        bio: formData.bio,
+        workDays: formData.workDays,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        updatedAt: new Date().toISOString()
+      };
+
+      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(['SET', `profissional:${selectedProfessional.id}`, JSON.stringify(updatedProfessional)]),
+      });
+
+      if (response.ok) {
+        // Se tiver usuário associado, atualizar também
+        if (selectedProfessional.hasUserAccount && selectedProfessional.username) {
+          await updateUser(selectedProfessional.username, {
+            name: formData.name,
+            email: formData.email
+          });
+        }
+
+        toast({
+          title: "Sucesso",
+          description: "Profissional atualizado com sucesso",
+        });
+
+        closeModals();
+        loadProfessionals();
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar profissional",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Carregar dados ao montar componente
   useEffect(() => {
-    loadCategories();
-    loadProfessionals();
+    if (hasPermission('view_staff') || hasPermission('manage_staff')) {
+      loadCategories();
+      loadProfessionals();
+    }
   }, []);
 
   // Auto-gerar username quando nome mudar
   useEffect(() => {
-    if (formData.createLogin && formData.name) {
+    if (formData.createLogin && formData.name && showAddModal) {
       const username = generateUsername(formData.name);
       setFormData(prev => ({ ...prev, username }));
     }
-  }, [formData.name, formData.createLogin]);
+  }, [formData.name, formData.createLogin, showAddModal]);
 
   // Atualizar categoria padrão quando categorias carregarem
   useEffect(() => {
@@ -582,6 +794,19 @@ const StaffManagement = () => {
     setFormData({ ...formData, workDays: newWorkDays });
   };
 
+  // Verificar se tem permissão para ver a página
+  if (!hasPermission('view_staff') && !hasPermission('manage_staff')) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-600">Acesso Restrito</h2>
+          <p className="text-gray-500 mt-2">Você não tem permissão para acessar esta página</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -603,14 +828,18 @@ const StaffManagement = () => {
           <p className="text-gray-600">Gerencie profissionais e usuários administrativos</p>
         </div>
         <div className="flex space-x-3">
-          <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
-            <Settings className="w-4 h-4 mr-2" />
-            Categorias
-          </Button>
-          <Button onClick={openAddModal}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Adicionar Pessoa
-          </Button>
+          {canManageCategories && (
+            <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
+              <Settings className="w-4 h-4 mr-2" />
+              Categorias
+            </Button>
+          )}
+          {canCreateUsers && (
+            <Button onClick={openAddModal}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Adicionar Pessoa
+            </Button>
+          )}
         </div>
       </div>
 
@@ -726,6 +955,9 @@ const StaffManagement = () => {
                   Acesso Sistema
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Roles/Permissões
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -819,6 +1051,41 @@ const StaffManagement = () => {
                         )}
                       </div>
                     </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {professional.hasUserAccount ? (
+                        <div>
+                          <div className="flex flex-wrap gap-1">
+                            {professional.roles?.map(role => (
+                              <Badge 
+                                key={role} 
+                                className={
+                                  role === 'proprietario' ? 'bg-red-100 text-red-800' :
+                                  role === 'gerente' ? 'bg-purple-100 text-purple-800' :
+                                  role === 'atendente' ? 'bg-blue-100 text-blue-800' :
+                                  role === 'profissional' ? 'bg-green-100 text-green-800' :
+                                  role === 'financeiro' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }
+                              >
+                                {role}
+                              </Badge>
+                            )) || (
+                              <Badge className="bg-green-100 text-green-800">
+                                {professional.role || 'profissional'}
+                              </Badge>
+                            )}
+                          </div>
+                          {professional.roles?.length > 1 && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {professional.roles.length} roles ativas
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -838,22 +1105,70 @@ const StaffManagement = () => {
                     
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {/* openEditModal(professional) */}}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        {canEditUsers ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditModal(professional)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled
+                            title="Sem permissão"
+                          >
+                            <Lock className="w-4 h-4" />
+                          </Button>
+                        )}
                         
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {/* deleteProfessional(professional) */}}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {/* Botão para gerenciar roles - apenas para usuários com login */}
+                        {professional.hasUserAccount && canEditUsers ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              // Buscar dados completos do usuário
+                              const userData = await getUserDataForRoles(professional);
+                              if (userData) {
+                                setUserForRoles(userData);
+                                setShowRolesModal(true);
+                              } else {
+                                toast({
+                                  title: "Erro",
+                                  description: "Não foi possível carregar dados do usuário",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                            title="Gerenciar Roles"
+                          >
+                            <Shield className="w-4 h-4" />
+                          </Button>
+                        ) : null}
+                        
+                        {canDeleteUsers ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteProfessional(professional)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled
+                            title="Apenas usuário mestre pode excluir"
+                            className="text-gray-400"
+                          >
+                            <Lock className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -871,8 +1186,8 @@ const StaffManagement = () => {
         )}
       </div>
 
-      {/* Modal Gerenciar Categorias */}
-      {showCategoryModal && (
+      {/* Modal Gerenciar Categorias - COM VERIFICAÇÃO DE PERMISSÃO */}
+      {showCategoryModal && canManageCategories && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
@@ -1426,6 +1741,259 @@ const StaffManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Editar Usuário */}
+      {showEditModal && selectedProfessional && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-5xl max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Editar {selectedProfessional.name}</h2>
+              <Button variant="ghost" onClick={closeModals}>✕</Button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Coluna 1: Dados do Profissional */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                  📋 Dados Pessoais
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Categoria */}
+                {formData.userType === 'professional' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Categoria
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {categories.map(category => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL da Foto
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.photo}
+                    onChange={(e) => setFormData({...formData, photo: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Telefone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="active">Ativo</option>
+                    <option value="inactive">Inativo</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Coluna 2: Informações Profissionais */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                  💼 Informações Profissionais
+                </h3>
+
+                {formData.userType === 'professional' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Especialidades
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.specialties}
+                        onChange={(e) => setFormData({...formData, specialties: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Experiência
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.experience}
+                          onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Faixa de Preço
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.price}
+                          onChange={(e) => setFormData({...formData, price: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Início
+                        </label>
+                        <input
+                          type="time"
+                          value={formData.startTime}
+                          onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fim
+                        </label>
+                        <input
+                          type="time"
+                          value={formData.endTime}
+                          onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dias de Trabalho
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {weekDays.map(day => (
+                          <button
+                            key={day.id}
+                            type="button"
+                            onClick={() => toggleWorkDay(day.id)}
+                            className={`px-3 py-1 rounded-md text-sm ${
+                              formData.workDays.includes(day.id)
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-200 text-gray-700'
+                            }`}
+                          >
+                            {day.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Bio/Observações */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.userType === 'professional' ? 'Biografia' : 'Observações'}
+                  </label>
+                  <textarea
+                    value={formData.bio}
+                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Informações de acesso */}
+                {selectedProfessional.hasUserAccount && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">
+                      🔑 Informações de Acesso
+                    </h4>
+                    <div className="text-sm text-blue-700">
+                      <p><strong>Username:</strong> @{selectedProfessional.username}</p>
+                      <p><strong>Tem acesso ao sistema:</strong> Sim</p>
+                      <p className="text-xs mt-2 text-blue-600">
+                        Para alterar senha ou permissões, use o gerenciamento de usuários.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-8 pt-6 border-t">
+              <Button onClick={updateProfessional} className="flex-1">
+                Salvar Alterações
+              </Button>
+              <Button variant="outline" onClick={closeModals} className="flex-1">
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gerenciar Roles */}
+      <UserRolesManager 
+        isOpen={showRolesModal}
+        onClose={() => {
+          setShowRolesModal(false);
+          setUserForRoles(null);
+        }}
+        targetUser={userForRoles}
+        onUpdate={() => {
+          loadProfessionals();
+          // Recarregar dados se necessário
+        }}
+      />
     </motion.div>
   );
 };

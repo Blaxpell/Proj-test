@@ -1,6 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 const AuthContext = createContext();
+
+// Tempo de expiração em milissegundos (30 minutos)
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos
+const INACTIVITY_CHECK_INTERVAL = 60 * 1000; // Verificar a cada 1 minuto
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -14,6 +18,70 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Refs para controle de sessão
+  const lastActivityRef = useRef(Date.now());
+  const sessionTimerRef = useRef(null);
+  const inactivityTimerRef = useRef(null);
+
+  // Função para atualizar última atividade
+  const updateLastActivity = () => {
+    lastActivityRef.current = Date.now();
+    
+    // Atualizar no localStorage também
+    if (user) {
+      const sessionData = {
+        user,
+        lastActivity: Date.now(),
+        expiresAt: Date.now() + SESSION_TIMEOUT
+      };
+      localStorage.setItem('salon_session', JSON.stringify(sessionData));
+    }
+  };
+
+  // Monitorar atividade do usuário
+  useEffect(() => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      updateLastActivity();
+    };
+
+    // Adicionar listeners apenas se usuário estiver autenticado
+    if (isAuthenticated) {
+      events.forEach(event => {
+        document.addEventListener(event, handleActivity);
+      });
+    }
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [isAuthenticated, user]);
+
+  // Verificar sessão periodicamente
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Verificar inatividade a cada minuto
+      inactivityTimerRef.current = setInterval(() => {
+        const now = Date.now();
+        const timeSinceLastActivity = now - lastActivityRef.current;
+        
+        if (timeSinceLastActivity > SESSION_TIMEOUT) {
+          console.log('Sessão expirada por inatividade');
+          logout('Sua sessão expirou por inatividade');
+        }
+      }, INACTIVITY_CHECK_INTERVAL);
+    }
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearInterval(inactivityTimerRef.current);
+      }
+    };
+  }, [isAuthenticated]);
 
   // Verificar autenticação ao carregar
   useEffect(() => {
@@ -22,22 +90,39 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const savedUser = localStorage.getItem('salon_user');
-      if (savedUser) {
-        const userData = JSON.parse(savedUser);
+      const sessionData = localStorage.getItem('salon_session');
+      
+      if (sessionData) {
+        const { user: savedUser, expiresAt } = JSON.parse(sessionData);
         
-        // Verificar se o usuário ainda é válido no servidor
-        const isValid = await validateUser(userData.username);
-        if (isValid) {
-          setUser(userData);
-          setIsAuthenticated(true);
+        // Verificar se a sessão ainda é válida
+        if (expiresAt && Date.now() > expiresAt) {
+          console.log('Sessão expirada');
+          localStorage.removeItem('salon_session');
+          localStorage.removeItem('salon_user'); // Limpar dados antigos também
         } else {
-          // Limpar dados inválidos
-          localStorage.removeItem('salon_user');
+          // Verificar se o usuário ainda é válido no servidor
+          const isValid = await validateUser(savedUser.username);
+          if (isValid) {
+            setUser(savedUser);
+            setIsAuthenticated(true);
+            updateLastActivity(); // Atualizar atividade ao retomar sessão
+          } else {
+            // Limpar dados inválidos
+            localStorage.removeItem('salon_session');
+            localStorage.removeItem('salon_user');
+          }
+        }
+      } else {
+        // Verificar formato antigo (retrocompatibilidade)
+        const oldUserData = localStorage.getItem('salon_user');
+        if (oldUserData) {
+          localStorage.removeItem('salon_user'); // Limpar formato antigo
         }
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
+      localStorage.removeItem('salon_session');
       localStorage.removeItem('salon_user');
     } finally {
       setLoading(false);
@@ -147,7 +232,17 @@ export const AuthProvider = ({ children }) => {
 
       setUser(finalUserData);
       setIsAuthenticated(true);
-      localStorage.setItem('salon_user', JSON.stringify(finalUserData));
+      
+      // Salvar sessão com timestamp de expiração
+      const sessionData = {
+        user: finalUserData,
+        lastActivity: Date.now(),
+        expiresAt: Date.now() + SESSION_TIMEOUT
+      };
+      localStorage.setItem('salon_session', JSON.stringify(sessionData));
+      
+      // Inicializar última atividade
+      updateLastActivity();
 
       return { success: true };
     } catch (error) {
@@ -156,10 +251,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (message = null) => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('salon_user');
+    localStorage.removeItem('salon_session');
+    localStorage.removeItem('salon_user'); // Limpar formato antigo também
+    
+    // Limpar timers
+    if (sessionTimerRef.current) {
+      clearTimeout(sessionTimerRef.current);
+    }
+    if (inactivityTimerRef.current) {
+      clearInterval(inactivityTimerRef.current);
+    }
+    
+    // Se houver mensagem (ex: expiração), pode mostrar um toast
+    if (message && window.toast) {
+      window.toast({
+        title: "Sessão encerrada",
+        description: message,
+        variant: "default"
+      });
+    }
   };
 
   // Função para alterar senha
@@ -224,7 +337,9 @@ export const AuthProvider = ({ children }) => {
       // Atualizar dados locais do usuário
       const updatedLocalUser = { ...user, ...updatedUser };
       setUser(updatedLocalUser);
-      localStorage.setItem('salon_user', JSON.stringify(updatedLocalUser));
+      
+      // Atualizar sessão
+      updateLastActivity();
 
       return { 
         success: true, 
