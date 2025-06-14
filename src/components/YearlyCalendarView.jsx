@@ -14,7 +14,8 @@ import {
   User,
   Filter,
   Lock,
-  Calendar
+  Calendar,
+  DollarSign
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -300,6 +301,7 @@ const YearlyCalendarView = ({
     );
   };
 
+  // ✅ MODIFICADO: Detectar slots reservados por orçamento
   const getSlotStatus = (year, month, day, time) => {
     const slotAppointments = getAppointmentsForSlot(year, month, day, time);
     
@@ -311,6 +313,18 @@ const YearlyCalendarView = ({
           : 'bg-green-500/30 hover:bg-green-500/40 cursor-pointer', 
         text: 'Disponível', 
         icon: Plus 
+      };
+    }
+    
+    // ✅ NOVO: Verificar se há slot reservado por orçamento
+    const reservedByQuote = slotAppointments.some(apt => apt.status === 'reservado_por_orcamento');
+    if (reservedByQuote) {
+      return { 
+        status: 'reservado_orcamento', 
+        color: 'bg-purple-500/30 border border-purple-400/50', 
+        text: 'Reservado por Orçamento', 
+        icon: DollarSign,
+        appointments: slotAppointments.filter(apt => apt.status === 'reservado_por_orcamento')
       };
     }
     
@@ -346,6 +360,46 @@ const YearlyCalendarView = ({
     };
   };
 
+  // ✅ NOVO: Função para liberar slots de orçamento (quando orçamento for recusado)
+  const releaseQuoteSlots = async (quoteId) => {
+    try {
+      console.log(`🔓 Liberando slots do orçamento ${quoteId}`);
+      
+      // Buscar todos os agendamentos relacionados ao orçamento
+      const slotsToRelease = appointments.filter(apt => 
+        apt.quoteId === quoteId && apt.status === 'reservado_por_orcamento'
+      );
+      
+      // Remover cada slot do Redis
+      for (const slot of slotsToRelease) {
+        await fetch('https://coherent-escargot-23835.upstash.io/', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(['DEL', `agendamento:${slot.id}`]),
+        });
+      }
+      
+      // Recarregar agendamentos para atualizar a visualização
+      loadAppointments();
+      
+      toast({
+        title: "Slots liberados!",
+        description: `${slotsToRelease.length} horário(s) foram liberados no calendário.`,
+      });
+      
+    } catch (error) {
+      console.error('Erro ao liberar slots do orçamento:', error);
+      toast({
+        title: "Erro ao liberar slots",
+        description: "Não foi possível liberar os horários do orçamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderMonthCalendar = (year, month) => {
     const numDays = daysInMonth(year, month);
     const firstDay = firstDayOfMonth(year, month);
@@ -362,11 +416,14 @@ const YearlyCalendarView = ({
       const dayAppointments = filteredAppointments.filter(apt => apt.date === dateStr);
       const pendingCount = dayAppointments.filter(apt => apt.status === 'pendente').length;
       const approvedCount = dayAppointments.filter(apt => apt.status === 'aprovado').length;
+      const quoteReservedCount = dayAppointments.filter(apt => apt.status === 'reservado_por_orcamento').length; // ✅ NOVO
       const isSelected = selectedDay === day;
       
       let bgColor = '';
       if (isSelected) {
         bgColor = 'bg-pink-500/50 border-pink-400';
+      } else if (quoteReservedCount > 0) { // ✅ NOVO: Prioridade para orçamentos
+        bgColor = 'bg-purple-500/30 border-purple-400/50';
       } else if (approvedCount > 0 && pendingCount > 0) {
         bgColor = 'bg-gradient-to-r from-red-500/30 to-yellow-500/30 border-orange-400/50';
       } else if (approvedCount > 0) {
@@ -396,6 +453,12 @@ const YearlyCalendarView = ({
               {pendingCount > 0 && (
                 <div className="bg-yellow-600/20 rounded px-1 py-0.5 text-yellow-200">
                   {pendingCount} pend.
+                </div>
+              )}
+              {/* ✅ NOVO: Indicador para orçamentos */}
+              {quoteReservedCount > 0 && (
+                <div className="bg-purple-600/20 rounded px-1 py-0.5 text-purple-200">
+                  {quoteReservedCount} orç.
                 </div>
               )}
             </div>
@@ -449,14 +512,34 @@ const YearlyCalendarView = ({
               </span>
             )}
           </h4>
-          <Button 
-            onClick={loadAppointments}
-            variant="ghost" 
-            size="sm"
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={loadAppointments}
+              variant="ghost" 
+              size="sm"
+              className="text-white/70 hover:text-white hover:bg-white/10"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            
+            {/* ✅ NOVO: Botão para liberar slots de orçamento (apenas para admin) */}
+            {isMasterUser() && !bookingMode && (
+              <Button 
+                onClick={() => {
+                  const quoteId = prompt('ID do orçamento para liberar slots:');
+                  if (quoteId) {
+                    releaseQuoteSlots(quoteId);
+                  }
+                }}
+                variant="ghost" 
+                size="sm"
+                className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                title="Liberar slots de orçamento"
+              >
+                <DollarSign className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
         
         {isPastDate && (
@@ -519,6 +602,7 @@ const YearlyCalendarView = ({
                       slotInfo.status === 'disponivel' ? 'text-green-200' :
                       slotInfo.status === 'pendente' ? 'text-yellow-200' :
                       slotInfo.status === 'reservado' ? 'text-red-200' :
+                      slotInfo.status === 'reservado_orcamento' ? 'text-purple-200' : // ✅ NOVO
                       'text-gray-200'
                     }`}>
                       {slotInfo.text}
@@ -531,9 +615,13 @@ const YearlyCalendarView = ({
                 
                 {slotInfo.appointments && slotInfo.appointments.length > 0 && (
                   <div className="text-xs text-white/70">
-                    {slotInfo.appointments.map(apt => 
-                      `${apt.clientName || 'Cliente'}${apt.professionalName ? ` - ${apt.professionalName}` : ''}`
-                    ).join(', ')}
+                    {slotInfo.appointments.map(apt => {
+                      // ✅ NOVO: Mostrar informação específica para orçamentos
+                      if (apt.status === 'reservado_por_orcamento') {
+                        return `Orçamento ${apt.quoteId?.slice(-6) || 'N/A'} - ${apt.clientName || 'Cliente'}`;
+                      }
+                      return `${apt.clientName || 'Cliente'}${apt.professionalName ? ` - ${apt.professionalName}` : ''}`;
+                    }).join(', ')}
                   </div>
                 )}
               </motion.div>
@@ -733,10 +821,10 @@ const YearlyCalendarView = ({
         </div>
       </div>
       
-      {/* Legenda */}
+      {/* ✅ MODIFICADO: Legenda atualizada com novo status */}
       <div className="glass-effect rounded-xl p-4">
         <h3 className="text-lg font-semibold text-white mb-3">Status dos Horários</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="flex items-center">
             <div className="w-4 h-4 rounded-full bg-green-500/40 mr-2"></div>
             <span className="text-white/80 text-sm">Disponível{bookingMode ? ' (clicável)' : ''}</span>
@@ -748,6 +836,11 @@ const YearlyCalendarView = ({
           <div className="flex items-center">
             <div className="w-4 h-4 rounded-full bg-red-500/40 mr-2"></div>
             <span className="text-white/80 text-sm">Reservado</span>
+          </div>
+          {/* ✅ NOVO: Status de orçamento */}
+          <div className="flex items-center">
+            <div className="w-4 h-4 rounded-full bg-purple-500/40 mr-2"></div>
+            <span className="text-white/80 text-sm">Reservado por Orçamento</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 rounded-full bg-gray-500/40 mr-2"></div>
