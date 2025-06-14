@@ -197,118 +197,129 @@ const ProfessionalSelection = ({
 
     return (
       <div className="relative">
-        {/* Carrossel de fotos */}
-        <div className="relative h-80 mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0"
-            >
-              {currentProfessional?.photo ? (
-                <img
-                  src={currentProfessional.photo}
-                  alt={currentProfessional.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              
-              {/* Fallback quando não há foto */}
-              <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center"
-                   style={{ display: currentProfessional?.photo ? 'none' : 'flex' }}>
-                <div className="text-center">
-                  <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-300 text-lg font-semibold">{currentProfessional?.name}</p>
-                  <p className="text-gray-400 text-sm">Foto não disponível</p>
+        {/* 🎨 CARROSSEL DE FOTOS - VERSÃO CORRIGIDA (SEM CORTES) */}
+        <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900">
+          {/* Container responsivo com proporção adequada */}
+          <div className="relative w-full" style={{ paddingBottom: '75%' }}> {/* Proporção 4:3 */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentIndex}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0"
+              >
+                {currentProfessional?.photo ? (
+                  <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                    <img
+                      src={currentProfessional.photo}
+                      alt={currentProfessional.name}
+                      className="max-w-full max-h-full object-contain rounded-lg"
+                      style={{
+                        objectPosition: 'center',
+                        filter: 'drop-shadow(0 8px 32px rgba(0,0,0,0.3))'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  </div>
+                ) : null}
+                
+                {/* Fallback quando não há foto */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center"
+                     style={{ display: currentProfessional?.photo ? 'none' : 'flex' }}>
+                  <div className="text-center">
+                    <div className="w-24 h-32 bg-gradient-to-br from-purple-400 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                      <Camera className="w-12 h-12 text-white" />
+                    </div>
+                    <p className="text-gray-300 text-lg font-semibold">{currentProfessional?.name}</p>
+                    <p className="text-gray-400 text-sm">Foto em breve</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Overlay com informações */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              
-              {/* Informações do profissional */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-2xl font-bold drop-shadow-lg">
-                    {currentProfessional?.name}
-                  </h3>
-                  {currentProfessional?.rating && (
-                    <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full px-3 py-1">
-                      <Star className="w-4 h-4 text-yellow-400 mr-1 fill-current" />
-                      <span className="text-sm font-semibold">{currentProfessional.rating}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Overlay com informações */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 
-                {currentProfessional?.specialties && (
-                  <p className="text-sm text-gray-200 mb-2">
-                    {Array.isArray(currentProfessional.specialties) 
-                      ? currentProfessional.specialties.join(' • ')
-                      : currentProfessional.specialties
-                    }
-                  </p>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  {currentProfessional?.experience && (
-                    <div className="flex items-center text-sm text-gray-300">
-                      <Award className="w-4 h-4 mr-1" />
-                      <span>{currentProfessional.experience}</span>
-                    </div>
+                {/* Informações do profissional */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-2xl font-bold drop-shadow-lg">
+                      {currentProfessional?.name}
+                    </h3>
+                    {currentProfessional?.rating && (
+                      <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full px-3 py-1">
+                        <Star className="w-4 h-4 text-yellow-400 mr-1 fill-current" />
+                        <span className="text-sm font-semibold">{currentProfessional.rating}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {currentProfessional?.specialties && (
+                    <p className="text-sm text-gray-200 mb-2">
+                      {Array.isArray(currentProfessional.specialties) 
+                        ? currentProfessional.specialties.join(' • ')
+                        : currentProfessional.specialties
+                      }
+                    </p>
                   )}
                   
-                  {currentProfessional?.price && (
-                    <div className="flex items-center text-sm text-green-300 font-semibold">
-                      <span>{currentProfessional.price}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between">
+                    {currentProfessional?.experience && (
+                      <div className="flex items-center text-sm text-gray-300">
+                        <Award className="w-4 h-4 mr-1" />
+                        <span>{currentProfessional.experience}</span>
+                      </div>
+                    )}
+                    
+                    {currentProfessional?.price && (
+                      <div className="flex items-center text-sm text-green-300 font-semibold">
+                        <span>{currentProfessional.price}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
 
-          {/* Botões de navegação */}
-          {groupProfessionals.length > 1 && (
-            <>
-              <button
-                onClick={() => navigateCarousel(group.id, 'prev')}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              
-              <button
-                onClick={() => navigateCarousel(group.id, 'next')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            </>
-          )}
-
-          {/* Indicadores */}
-          {groupProfessionals.length > 1 && (
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex space-x-2">
-              {groupProfessionals.map((_, index) => (
+            {/* Botões de navegação */}
+            {groupProfessionals.length > 1 && (
+              <>
                 <button
-                  key={index}
-                  onClick={() => setCarouselIndex(prev => ({ ...prev, [group.id]: index }))}
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                    index === currentIndex 
-                      ? 'bg-white scale-110' 
-                      : 'bg-white/50 hover:bg-white/75'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
+                  onClick={() => navigateCarousel(group.id, 'prev')}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110 z-10"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                
+                <button
+                  onClick={() => navigateCarousel(group.id, 'next')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110 z-10"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Indicadores */}
+            {groupProfessionals.length > 1 && (
+              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+                {groupProfessionals.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCarouselIndex(prev => ({ ...prev, [group.id]: index }))}
+                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                      index === currentIndex 
+                        ? 'bg-white scale-110' 
+                        : 'bg-white/50 hover:bg-white/75'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Botão de seleção */}

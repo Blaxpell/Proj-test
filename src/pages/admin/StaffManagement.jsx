@@ -589,7 +589,151 @@ const StaffManagement = () => {
     setShowEditModal(true);
   };
 
-  // Deletar profissional
+  // 🗑️ FUNÇÃO PARA DELETAR PERMANENTEMENTE
+  const deleteProfessionalPermanently = async (professional) => {
+    try {
+      console.log('🗑️ Deletando permanentemente:', professional);
+      
+      // 1. Se tem conta de usuário, deletar do Redis
+      if (professional.hasUserAccount && professional.username) {
+        const userKey = `user:${professional.username}`;
+        console.log('🗑️ Deletando usuário:', userKey);
+        
+        const deleteUserResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(['DEL', userKey]),
+        });
+        
+        if (!deleteUserResponse.ok) {
+          throw new Error('Erro ao deletar usuário do Redis');
+        }
+      }
+      
+      // 2. Se é profissional, deletar entrada de profissional
+      if (professional.userType === 'professional' && professional.id) {
+        const profKey = `profissional:${professional.id}`;
+        console.log('🗑️ Deletando profissional:', profKey);
+        
+        const deleteProfResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(['DEL', profKey]),
+        });
+        
+        if (!deleteProfResponse.ok) {
+          throw new Error('Erro ao deletar profissional do Redis');
+        }
+      }
+      
+      // 3. Se é usuário administrativo, deletar pela chave de usuário
+      if (professional.userType === 'administrative' && professional.username) {
+        const userKey = `user:${professional.username}`;
+        console.log('🗑️ Deletando usuário administrativo:', userKey);
+        
+        const deleteResponse = await fetch('https://coherent-escargot-23835.upstash.io/', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(['DEL', userKey]),
+        });
+        
+        if (!deleteResponse.ok) {
+          throw new Error('Erro ao deletar usuário administrativo do Redis');
+        }
+      }
+      
+      // 4. Mostrar sucesso
+      toast({
+        title: "✅ Usuário deletado permanentemente",
+        description: `${professional.name} foi removido do sistema`,
+      });
+      
+      // 5. Recarregar lista
+      loadProfessionals();
+      
+    } catch (error) {
+      console.error('❌ Erro ao deletar:', error);
+      toast({
+        title: "Erro ao deletar",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 🔄 FUNÇÃO PARA DESATIVAR USUÁRIO (ALTERNATIVA SEGURA)
+  const handleDeactivateUser = async (professional) => {
+    try {
+      console.log('🔄 Desativando usuário:', professional.name);
+      
+      // Determinar a chave correta
+      let key;
+      let updatedData;
+      
+      if (professional.userType === 'professional' && professional.id) {
+        // Profissional
+        key = `profissional:${professional.id}`;
+        updatedData = {
+          ...professional,
+          status: 'inactive',
+          active: false,
+          deactivatedAt: new Date().toISOString(),
+          deactivatedBy: user?.username || 'system'
+        };
+      } else if (professional.userType === 'administrative' && professional.username) {
+        // Usuário administrativo
+        key = `user:${professional.username}`;
+        updatedData = {
+          ...professional,
+          active: false,
+          status: 'inactive',
+          deactivatedAt: new Date().toISOString(),
+          deactivatedBy: user?.username || 'system'
+        };
+      } else {
+        throw new Error('Tipo de usuário não identificado');
+      }
+      
+      // Salvar no Redis
+      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(['SET', key, JSON.stringify(updatedData)]),
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "✅ Usuário desativado",
+          description: `${professional.name} foi desativado (pode ser reativado depois)`,
+        });
+        loadProfessionals();
+      } else {
+        throw new Error('Erro ao salvar no Redis');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao desativar:', error);
+      toast({
+        title: "Erro ao desativar",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // 🔧 FUNÇÃO DELETAR ATUALIZADA COM OPÇÕES
   const deleteProfessional = async (professional) => {
     if (!canDeleteUsers) {
       toast({
@@ -600,40 +744,32 @@ const StaffManagement = () => {
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir ${professional.name}?`)) return;
-
-    try {
-      // 1. Se tiver usuário associado, desativar primeiro
-      if (professional.hasUserAccount && professional.username) {
-        await deactivateUser(professional.username);
+    // Primeiro, perguntar se quer desativar ou deletar permanentemente
+    const action = window.confirm(
+      `⚠️ ESCOLHA A AÇÃO PARA "${professional.name}":\n\n` +
+      `✅ OK = DELETAR PERMANENTEMENTE (não poderá ser desfeito)\n` +
+      `❌ CANCELAR = Apenas desativar (pode ser reativado depois)\n\n` +
+      `Clique OK para DELETAR PERMANENTEMENTE\n` +
+      `Clique CANCELAR para apenas DESATIVAR`
+    );
+    
+    if (action) {
+      // DELETAR PERMANENTEMENTE
+      const confirmDelete = window.confirm(
+        `🚨 ÚLTIMA CONFIRMAÇÃO!\n\n` +
+        `DELETAR PERMANENTEMENTE "${professional.name}"?\n\n` +
+        `⚠️ ESTA AÇÃO É IRREVERSÍVEL!\n` +
+        `⚠️ TODOS OS DADOS SERÃO PERDIDOS!\n` +
+        `⚠️ NÃO PODERÁ SER DESFEITO!\n\n` +
+        `Tem certeza ABSOLUTA?`
+      );
+      
+      if (confirmDelete) {
+        await deleteProfessionalPermanently(professional);
       }
-
-      // 2. Deletar profissional do Redis
-      const response = await fetch('https://coherent-escargot-23835.upstash.io/', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer AV0bAAIjcDEyODVlMzY0YTk2ODk0M2JkOTRlNmVmMmUzZTQwMDNkMnAxMA',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(['DEL', `profissional:${professional.id}`]),
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Sucesso",
-          description: `${professional.name} foi removido com sucesso`,
-        });
-        loadProfessionals();
-      } else {
-        throw new Error('Erro ao deletar profissional');
-      }
-    } catch (error) {
-      console.error('Erro ao deletar:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir colaborador",
-        variant: "destructive"
-      });
+    } else {
+      // APENAS DESATIVAR
+      await handleDeactivateUser(professional);
     }
   };
 
